@@ -5,10 +5,10 @@ plugins {
     java
     id("gg.essential.loom") version "0.10.0.+"
     id("dev.architectury.architectury-pack200") version "0.1.3"
-    id("com.github.johnrengelman.shadow") version "8.1.1"
+    id("com.github.johnrengelman.shadow") version "7.1.2"
 }
 
-//Constants:
+// Constants:
 
 val baseGroup: String by project
 val mcVersion: String by project
@@ -22,9 +22,16 @@ java {
     toolchain.languageVersion.set(JavaLanguageVersion.of(8))
 }
 
+val java8 = javaToolchains.launcherFor {
+    languageVersion.set(JavaLanguageVersion.of(8))
+}
+
+tasks.withType<JavaExec>().configureEach {
+    javaLauncher.set(java8)
+}
+
 // Minecraft configuration:
 loom {
-    log4jConfigs.from(file("log4j2.xml"))
     launchConfigs {
         "client" {
             // If you don't want mixins, remove these lines
