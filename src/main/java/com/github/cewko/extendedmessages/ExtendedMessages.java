@@ -19,15 +19,52 @@ import net.minecraftforge.client.ClientCommandHandler;
 public class ExtendedMessages {
 
     public static boolean enabled = false;
+    private static boolean splitEnabled = true;
+    private static int messageDelaySeconds = 3;
 
     public static boolean isEnabled() {
         return enabled;
     }
 
+    public static boolean isSplitEnabled() {
+        return splitEnabled;
+    }
+
+    public static boolean toggleSplitEnabled() {
+        splitEnabled = !splitEnabled;
+        ExtendedMessagesConfig.saveSplitEnabled(splitEnabled);
+
+        if (!splitEnabled) {
+            // clear message queue
+        }
+
+        return splitEnabled;
+    }
+
     public static boolean toggleEnabled() {
         enabled = !enabled;
         ExtendedMessagesConfig.saveEnabled(enabled);
+
+        if (!enabled) {
+            // clear message queue
+        }
+
         return enabled;
+    }
+
+    public static int getMessageDelaySeconds() {
+        return messageDelaySeconds;
+    }
+
+    public static void setMessageDelaySeconds(int seconds) {
+        if (seconds < 1 || seconds > 30) {
+            throw new IllegalArgumentException(
+                "Message delay must be between 1 and 30 secs"
+            );
+        }
+
+        messageDelaySeconds = seconds;
+        ExtendedMessagesConfig.saveMessageDelaySeconds(seconds);
     }
 
     public static int getCurrentMessageLimit() {
@@ -38,9 +75,13 @@ public class ExtendedMessages {
 
     @Mod.EventHandler
     public void preInit(FMLPreInitializationEvent event) {
-        enabled = ExtendedMessagesConfig.load(
+        ExtendedMessagesConfig.load(
             event.getSuggestedConfigurationFile()
         );
+
+        enabled = ExtendedMessagesConfig.getEnabled();
+        splitEnabled = ExtendedMessagesConfig.getSplitEnabled();
+        messageDelaySeconds = ExtendedMessagesConfig.getMessageDelaySeconds();
     }
 
     @Mod.EventHandler
