@@ -1,8 +1,11 @@
 package com.github.cewko.extendedmessages;
 
 import com.github.cewko.extendedmessages.config.ExtendedMessagesConfig;
-import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
+import com.github.cewko.extendedmessages.messaging.MessageQueue;
 
+import net.minecraftforge.common.MinecraftForge;
+
+import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 
@@ -90,6 +93,8 @@ public class ExtendedMessages {
             new ExtendedMessagesCommand()
         );
 
+        MinecraftForge.EVENT_BUS.register(MessageQueue.getInstance());
+        
         System.out.println("[" + Reference.NAME + "] Mod has loaded :3");
     }
 }
