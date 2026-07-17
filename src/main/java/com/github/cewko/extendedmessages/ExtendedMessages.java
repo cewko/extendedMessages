@@ -26,6 +26,12 @@ public class ExtendedMessages {
         return enabled;
     }
 
+    public static int getCurrentMessageLimit() {
+        return enabled
+            ? Reference.EXTENDED_MESSAGE_LIMIT
+            : Reference.DEFAULT_MESSAGE_LIMIT;
+    }
+
     @Mod.EventHandler
     public void init(FMLInitializationEvent event) {
         ClientCommandHandler.instance.registerCommand(
