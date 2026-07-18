@@ -23,41 +23,126 @@ public abstract class MixinEntityPlayerSP {
         cancellable = true,
         require = 1
     )
-    private void extendedMessages$interceptMessage(
+    private void extendedmessages$interceptMessage(
         String message,
         CallbackInfo callback
     ) {
-        if (!ExtendedMessages.isEnabled()
-                || message.length() <= Reference.DEFAULT_MESSAGE_LIMIT) {
+        if (MessageQueue.getInstance().isSendingQueuedMessage()) {
+            return;
+        }
+
+        if (!ExtendedMessages.isEnabled()) {
             return;
         }
 
         Minecraft minecraft = Minecraft.getMinecraft();
+        boolean directMode = !ExtendedMessages.isSplitEnabled();
 
-        if (minecraft.isSingleplayer() || !ExtendedMessages.isSplitEnabled()) {
+        if (handleConfiguredCommand(minecraft, message, callback, directMode)) {
+            return;
+        }
+
+        if (message.startsWith("/") && message.length() > Reference.DEFAULT_MESSAGE_LIMIT
+                && !directMode) {
+            callback.cancel();
+            sendWarning(minecraft, "Long commands cannot be split safely");
+            return;
+        }
+
+        if (message.startsWith("/")) {
+            return;
+        }
+
+        String messagePrefix = ExtendedMessages.isMessagePrefixEnabled()
+            ? withTrailingSpace(ExtendedMessages.getMessagePrefix())
+            : "";
+
+        boolean needsPrefix = !messagePrefix.isEmpty();
+        boolean tooLongForVanilla =
+            messagePrefix.length() + message.length() > Reference.DEFAULT_MESSAGE_LIMIT;
+
+        if (!needsPrefix && (!tooLongForVanilla || directMode)) {
+            return;
+        }
+
+        if (directMode) {
+            sendDirectWithPrefix(minecraft, callback, messagePrefix, message);
             return;
         }
 
         callback.cancel();
+        MessageQueue.getInstance().enqueueRegular(message);
+    }
 
-        if (message.charAt(0) == '/') {
-            minecraft.thePlayer.addChatMessage(
-                new ChatComponentText(
-                    EnumChatFormatting.RED + "[" + Reference.NAME + "]"
-                    + "Commands longer than 100 characters cannot be split safely"
-                )
+    private boolean handleConfiguredCommand(
+        Minecraft minecraft, String message,
+        CallbackInfo callback, boolean directMode
+    ) {
+        if (!ExtendedMessages.isCommandPrefixEnabled()) {
+            return false;
+        }
+
+        String commandPrefix = ExtendedMessages.getCommandPrefix();
+
+        if (!startsWithCommand(message, commandPrefix)) {
+            return false;
+        }
+
+        if (message.length() <= Reference.DEFAULT_MESSAGE_LIMIT || directMode) {
+            return false;
+        }
+
+        String commandWithSpace = withTrailingSpace(commandPrefix);
+        String body = message.substring(commandWithSpace.length());
+
+        callback.cancel();
+        MessageQueue.getInstance().enqueueCommand(commandPrefix, body);
+
+        return true;
+    }
+
+    private void sendDirectWithPrefix(
+        Minecraft minecraft, CallbackInfo callback,
+        String prefix, String message
+    ) {
+        String prefixedMessage = prefix + message;
+
+        if (prefixedMessage.length() > Reference.EXTENDED_MESSAGE_LIMIT) {
+            callback.cancel();
+            sendWarning(minecraft, "Prefixed message is longer than "
+                + Reference.EXTENDED_MESSAGE_LIMIT
+                + " characters"
             );
-
-            minecraft.thePlayer.addChatMessage(
-                new ChatComponentText(
-                    EnumChatFormatting.GRAY + "Use /em split only if long commands are supported by the server"
-                )
-            );
-
             return;
         }
 
-        MessageQueue.getInstance().enqueue(message);
+        callback.cancel();
+        MessageQueue.getInstance().sendDirect(prefixedMessage);
+    }
 
+    private boolean startsWithCommand(String message, String command) {
+        String commandWithSpace = withTrailingSpace(command);
+
+        return !commandWithSpace.isEmpty()
+            && message.regionMatches(
+                true, 0, commandWithSpace, 0, commandWithSpace.length()
+            );
+    }
+
+    private String withTrailingSpace(String prefix) {
+        String trimmed = prefix.trim();
+
+        if (trimmed.isEmpty()) {
+            return "";
+        }
+
+        return trimmed + " ";
+    }
+
+    private void sendWarning(Minecraft minecraft, String message) {
+        minecraft.thePlayer.addChatMessage(new ChatComponentText(
+            EnumChatFormatting.RED
+                + "[" + Reference.NAME + "] " + message
+        ));
     }
 }

@@ -46,19 +46,18 @@ public final class ExtendedMessagesCommand extends CommandBase {
         }
 
         if (args.length == 1 && "toggle".equalsIgnoreCase(args[0])) {
-
             boolean enabled = ExtendedMessages.toggleEnabled();
-
             sendLine(sender, "Remove 100-character limit: " + formatState(enabled));
 
             return;
         }
 
         if (args.length == 1 && "split".equalsIgnoreCase(args[0])) {
-
             boolean enabled = ExtendedMessages.toggleSplitEnabled();
 
-            sendLine(sender, "Split long messages: " + formatState(enabled));
+            sendLine(sender, "Split long messages: " + formatState(enabled)
+                + formatSplitRisk(enabled)
+            );
 
             return;
         }
@@ -208,6 +207,7 @@ public final class ExtendedMessagesCommand extends CommandBase {
             EnumChatFormatting.GRAY
                 + "Split long messages: "
                 + formatState(ExtendedMessages.isSplitEnabled())
+                + formatSplitRisk(ExtendedMessages.isSplitEnabled())
         ));
 
         int delay = ExtendedMessages.getMessageDelaySeconds();
@@ -291,6 +291,15 @@ public final class ExtendedMessagesCommand extends CommandBase {
 
     private String formatState(boolean enabled) {
         return enabled ? EnumChatFormatting.GREEN + "ON" : EnumChatFormatting.RED + "OFF";
+    }
+
+    private String formatSplitRisk(boolean splitEnabled) {
+        if (splitEnabled) {
+            return "";
+        }
+
+        return EnumChatFormatting.RED
+            + " (unsafe; servers might kick you)";
     }
 
     private String formatValue(String value) {

@@ -171,6 +171,16 @@ public class ExtendedMessages {
             : Reference.DEFAULT_MESSAGE_LIMIT;
     }
 
+    public static int getCurrentPacketMessageLimit() {
+        if (!enabled) {
+            return Reference.DEFAULT_MESSAGE_LIMIT;
+        }
+
+        return splitEnabled
+            ? Reference.DEFAULT_MESSAGE_LIMIT
+            : Reference.EXTENDED_MESSAGE_LIMIT;
+    }
+
     @Mod.EventHandler
     public void preInit(FMLPreInitializationEvent event) {
         ExtendedMessagesConfig.load(

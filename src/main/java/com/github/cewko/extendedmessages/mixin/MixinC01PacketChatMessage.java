@@ -17,6 +17,6 @@ public abstract class MixinC01PacketChatMessage {
     )
 
     private int extendedmessages$modifyOutgoingLimit(int defaultLimit) {
-        return ExtendedMessages.getCurrentMessageLimit();
+        return ExtendedMessages.getCurrentPacketMessageLimit();
     }
 }
