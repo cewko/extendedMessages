@@ -21,9 +21,15 @@ import net.minecraftforge.client.ClientCommandHandler;
 )
 public class ExtendedMessages {
 
-    public static boolean enabled = false;
-    private static boolean splitEnabled = true;
-    private static int messageDelaySeconds = 3;
+    public static boolean enabled = Reference.DEFAULT_ENABLED;
+    private static boolean splitEnabled = Reference.DEFAULT_SPLIT_ENABLED;
+    private static int messageDelaySeconds = Reference.DEFAULT_MESSAGE_DELAY_SECONDS;
+
+    private static boolean messagePrefixEnabled = Reference.DEFAULT_MESSAGE_PREFIX_ENABLED;
+    private static String messagePrefix = Reference.DEFAULT_MESSAGE_PREFIX;
+
+    private static boolean commandPrefixEnabled = Reference.DEFAULT_COMMAND_PREFIX_ENABLED;
+    private static String commandPrefix = Reference.DEFAULT_COMMAND_PREFIX;
 
     public static boolean isEnabled() {
         return enabled;
@@ -60,14 +66,103 @@ public class ExtendedMessages {
     }
 
     public static void setMessageDelaySeconds(int seconds) {
-        if (seconds < 1 || seconds > 30) {
+        if (seconds < Reference.MIN_MESSAGE_DELAY_SECONDS
+                || seconds > Reference.MAX_MESSAGE_DELAY_SECONDS) {
             throw new IllegalArgumentException(
-                "Message delay must be between 1 and 30 secs"
+                "Message delay must be between "
+                    + Reference.MIN_MESSAGE_DELAY_SECONDS
+                    + " and "
+                    + Reference.MAX_MESSAGE_DELAY_SECONDS
+                    + " secs"
             );
         }
 
         messageDelaySeconds = seconds;
         ExtendedMessagesConfig.saveMessageDelaySeconds(seconds);
+    }
+
+    public static boolean isMessagePrefixEnabled() {
+        return messagePrefixEnabled;
+    }
+
+    public static String getMessagePrefix() {
+        return messagePrefix;
+    }
+
+    public static boolean isCommandPrefixEnabled() {
+        return commandPrefixEnabled;
+    }
+
+    public static String getCommandPrefix() {
+        return commandPrefix;
+    }
+
+    public static boolean toggleMessagePrefixEnabled() {
+        messagePrefixEnabled = !messagePrefixEnabled;
+
+        ExtendedMessagesConfig.saveMessagePrefixEnabled(
+            messagePrefixEnabled
+        );
+
+        return messagePrefixEnabled;
+    }
+
+    public static void setMessagePrefix(String prefix) {
+        validatePrefix(prefix, "Message prefix");
+        messagePrefix = prefix;
+
+        ExtendedMessagesConfig.saveMessagePrefix(
+            messagePrefix
+        );
+    }
+
+    public static boolean toggleCommandPrefixEnabled() {
+        commandPrefixEnabled = !commandPrefixEnabled;
+
+        ExtendedMessagesConfig.saveCommandPrefixEnabled(
+            commandPrefixEnabled
+        );
+
+        return commandPrefixEnabled;
+    }
+
+    public static void setCommandPrefix(String prefix) {
+        if (prefix == null) {
+            throw new IllegalArgumentException("Command prefix cannot be null");
+        }
+
+        prefix = prefix.trim();
+
+        if (prefix.isEmpty()) {
+            throw new IllegalArgumentException("Command prefix cannot be empty");
+        }
+
+        if (!prefix.startsWith("/")) {
+            prefix = "/" + prefix;
+        }
+
+        validatePrefix(prefix, "Command prefix");
+
+        commandPrefix = prefix;
+
+        ExtendedMessagesConfig.saveCommandPrefix(
+            commandPrefix
+        );
+    }
+
+    private static void validatePrefix(String prefix, String displayName) {
+        if (prefix == null) {
+            throw new IllegalArgumentException(displayName + " cannot be null");
+        }
+
+        if (prefix.indexOf("\n") >= 0 || prefix.indexOf("\r") >= 0) {
+            throw new IllegalArgumentException(displayName + " cannot contain new lines");
+        }
+
+        if (prefix.length() >= Reference.DEFAULT_MESSAGE_LIMIT) {
+            throw new IllegalArgumentException(
+                displayName + " must be shorter than " + Reference.DEFAULT_MESSAGE_LIMIT);
+        }
     }
 
     public static int getCurrentMessageLimit() {
@@ -85,6 +180,12 @@ public class ExtendedMessages {
         enabled = ExtendedMessagesConfig.getEnabled();
         splitEnabled = ExtendedMessagesConfig.getSplitEnabled();
         messageDelaySeconds = ExtendedMessagesConfig.getMessageDelaySeconds();
+
+        messagePrefixEnabled = ExtendedMessagesConfig.getMessagePrefixEnabled();
+        messagePrefix = ExtendedMessagesConfig.getMessagePrefix();
+
+        commandPrefixEnabled = ExtendedMessagesConfig.getCommandPrefixEnabled();
+        commandPrefix = ExtendedMessagesConfig.getCommandPrefix();
     }
 
     @Mod.EventHandler

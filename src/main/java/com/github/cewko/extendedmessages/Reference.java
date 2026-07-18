@@ -11,6 +11,19 @@ public final class Reference {
     public static final int DEFAULT_MESSAGE_LIMIT = 100;
     public static final int EXTENDED_MESSAGE_LIMIT = 256;
 
+    public static final int MIN_MESSAGE_DELAY_SECONDS = 1;
+    public static final int MAX_MESSAGE_DELAY_SECONDS = 30;
+    public static final int DEFAULT_MESSAGE_DELAY_SECONDS = 3;
+
+    public static final boolean DEFAULT_ENABLED = false;
+    public static final boolean DEFAULT_SPLIT_ENABLED = true;
+
+    public static final boolean DEFAULT_MESSAGE_PREFIX_ENABLED = false;
+    public static final String DEFAULT_MESSAGE_PREFIX = "!";
+
+    public static final boolean DEFAULT_COMMAND_PREFIX_ENABLED = true;
+    public static final String DEFAULT_COMMAND_PREFIX = "/pc";
+
     private Reference() {
         // prevent creating instances
     }

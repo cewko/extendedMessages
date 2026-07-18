@@ -27,7 +27,8 @@ public abstract class MixinEntityPlayerSP {
         String message,
         CallbackInfo callback
     ) {
-        if (!ExtendedMessages.isEnabled() || message.length() <= 100) {
+        if (!ExtendedMessages.isEnabled()
+                || message.length() <= Reference.DEFAULT_MESSAGE_LIMIT) {
             return;
         }
 
