@@ -1,6 +1,7 @@
 package com.github.cewko.extendedmessages.messaging;
 
 import com.github.cewko.extendedmessages.ExtendedMessages;
+import com.github.cewko.extendedmessages.Reference;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -11,7 +12,7 @@ import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
 
 public final class MessageQueue {
-    private static final int PART_LENGTH = 100;
+    private static final int PART_LENGTH = Reference.DEFAULT_MESSAGE_LIMIT;
 
     private static final MessageQueue INSTANCE = new MessageQueue();
     private final Deque<String> chunks = new ArrayDeque<String>();
