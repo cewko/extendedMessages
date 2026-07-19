@@ -27,7 +27,9 @@ public abstract class MixinEntityPlayerSP {
         String message,
         CallbackInfo callback
     ) {
-        if (MessageQueue.getInstance().isSendingQueuedMessage()) {
+        MessageQueue queue = MessageQueue.getInstance();
+
+        if (queue.isSendingQueuedMessage()) {
             return;
         }
 
@@ -36,9 +38,23 @@ public abstract class MixinEntityPlayerSP {
         }
 
         Minecraft minecraft = Minecraft.getMinecraft();
-        boolean directMode = !ExtendedMessages.isSplitEnabled();
 
-        if (handleConfiguredCommand(minecraft, message, callback, directMode)) {
+        boolean directMode = !ExtendedMessages.isSplitEnabled();
+        boolean queueBusy = !directMode && queue.shouldQueueNewMessages();
+
+        if (handleConfiguredCommand(minecraft, message, callback, directMode, queueBusy)) {
+            return;
+        }
+
+        if (queueBusy) {
+            if (message.startsWith("/")) {
+                callback.cancel();
+                sendWarning(minecraft, "Wait for queued msgs to finish before using commands");
+                return;
+            }
+
+            callback.cancel();
+            queue.enqueueRegular(message);
             return;
         }
 
@@ -71,12 +87,12 @@ public abstract class MixinEntityPlayerSP {
         }
 
         callback.cancel();
-        MessageQueue.getInstance().enqueueRegular(message);
+        queue.enqueueRegular(message);
     }
 
     private boolean handleConfiguredCommand(
         Minecraft minecraft, String message,
-        CallbackInfo callback, boolean directMode
+        CallbackInfo callback, boolean directMode, boolean queueBusy
     ) {
         if (!ExtendedMessages.isCommandPrefixEnabled()) {
             return false;
@@ -88,7 +104,9 @@ public abstract class MixinEntityPlayerSP {
             return false;
         }
 
-        if (message.length() <= Reference.DEFAULT_MESSAGE_LIMIT || directMode) {
+        boolean tooLong = message.length() > Reference.DEFAULT_MESSAGE_LIMIT;
+
+        if (directMode || (!tooLong && !queueBusy)) {
             return false;
         }
 

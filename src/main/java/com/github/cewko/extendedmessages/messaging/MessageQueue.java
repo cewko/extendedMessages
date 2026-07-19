@@ -71,7 +71,8 @@ public final class MessageQueue {
             return;
         }
 
-        boolean sendImmediately = chunks.isEmpty();
+        boolean sendImmediately = chunks.isEmpty() 
+            && System.currentTimeMillis() >= nextSendAtMillis;
 
         queuedWorld = minecraft.theWorld;
 
@@ -138,15 +139,20 @@ public final class MessageQueue {
             sendingQueuedMessage = false;
         }
 
+        nextSendAtMillis = System.currentTimeMillis() + ExtendedMessages.getMessageDelaySeconds() * 1000L;
+
         if (chunks.isEmpty()) {
-            clear();
+            queuedWorld = null;
             return;
         }
 
-        nextSendAtMillis = System.currentTimeMillis() + ExtendedMessages.getMessageDelaySeconds() * 1000L;
     }
 
     public boolean isSendingQueuedMessage() {
         return sendingQueuedMessage;
+    }
+
+    public boolean shouldQueueNewMessages() {
+        return !chunks.isEmpty() || System.currentTimeMillis() < nextSendAtMillis;
     }
 }
