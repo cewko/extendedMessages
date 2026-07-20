@@ -43,9 +43,7 @@ public class ExtendedMessages {
         splitEnabled = !splitEnabled;
         ExtendedMessagesConfig.saveSplitEnabled(splitEnabled);
 
-        if (!splitEnabled) {
-            MessageQueue.getInstance().clear();
-        }
+        MessageQueue.getInstance().clear();
 
         return splitEnabled;
     }

@@ -1,10 +1,10 @@
 package com.github.cewko.extendedmessages.messaging;
 
 import com.github.cewko.extendedmessages.ExtendedMessages;
-import com.github.cewko.extendedmessages.Reference;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.List;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.World;
@@ -26,38 +26,10 @@ public final class MessageQueue {
         return INSTANCE;
     }
 
-    public void enqueueRegular(String message) {
-        String messagePrefix = ExtendedMessages.isMessagePrefixEnabled()
-            ? withTrailingSpace(ExtendedMessages.getMessagePrefix())
-            : "";
-
-        enqueueWithPrefix(messagePrefix, message);
-    }
-
-    public void enqueueCommand(String commandPrefix, String message) {
-        enqueueWithPrefix(withTrailingSpace(commandPrefix), message);
-    }
-
-    public void sendDirect(String message) {
+    public void enqueueLines(List<String> lines) {
         Minecraft minecraft = Minecraft.getMinecraft();
 
-        if (minecraft.thePlayer == null) {
-            return;
-        }
-
-        sendingQueuedMessage = true;
-
-        try {
-            minecraft.thePlayer.sendChatMessage(message);
-        } finally {
-            sendingQueuedMessage = false;
-        }
-    }
-
-    private void enqueueWithPrefix(String prefix, String message) {
-        Minecraft minecraft = Minecraft.getMinecraft();
-
-        if (minecraft.thePlayer == null || minecraft.theWorld == null) {
+        if (lines.isEmpty() || minecraft.thePlayer == null || minecraft.theWorld == null) {
             return;
         }
 
@@ -65,36 +37,15 @@ public final class MessageQueue {
             clear();
         }
 
-        int bodyLimit = Reference.DEFAULT_MESSAGE_LIMIT - prefix.length();
-
-        if (bodyLimit <= 0) {
-            return;
-        }
-
         boolean sendImmediately = chunks.isEmpty() 
             && System.currentTimeMillis() >= nextSendAtMillis;
 
         queuedWorld = minecraft.theWorld;
-
-        for (int start = 0; start < message.length(); start += bodyLimit) {
-            int end = Math.min(start + bodyLimit, message.length());
-
-            chunks.addLast(prefix + message.substring(start, end));
-        }
+        chunks.addAll(lines);
 
         if (sendImmediately) {
             sendNext(minecraft);
         }
-    }
-
-    private String withTrailingSpace(String prefix) {
-        String trimmed = prefix.trim();
-
-        if (trimmed.isEmpty()) {
-            return "";
-        }
-
-        return trimmed + " ";
     }
 
     @SubscribeEvent
@@ -106,8 +57,7 @@ public final class MessageQueue {
         Minecraft minecraft = Minecraft.getMinecraft();
 
         if (minecraft.thePlayer == null || minecraft.theWorld == null
-                || minecraft.theWorld != queuedWorld || !ExtendedMessages.isEnabled()
-                || !ExtendedMessages.isSplitEnabled()) {
+                || minecraft.theWorld != queuedWorld || !ExtendedMessages.isEnabled()) {
             clear();
             return;
         }
