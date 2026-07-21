@@ -13,10 +13,19 @@ import net.minecraftforge.fml.common.gameevent.TickEvent;
 
 public final class MessageQueue {
     private static final MessageQueue INSTANCE = new MessageQueue();
-    private final Deque<String> chunks = new ArrayDeque<String>();
+
+    public enum Lane {
+        REGULAR,
+        CONFIGURED_COMMAND
+    }
+
+    private final Deque<String> regularLines = new ArrayDeque<String>();
+    private final Deque<String> commandLines = new ArrayDeque<String>();
+
+    private long nextRegularSendAtMillis;
+    private long nextCommandSendAtMillis;
 
     private World queuedWorld;
-    private long nextSendAtMillis;
     private boolean sendingQueuedMessage;
 
     private MessageQueue() {
@@ -26,7 +35,7 @@ public final class MessageQueue {
         return INSTANCE;
     }
 
-    public void enqueueLines(List<String> lines) {
+    public void enqueueLines(List<String> lines, Lane lane) {
         Minecraft minecraft = Minecraft.getMinecraft();
 
         if (lines.isEmpty() || minecraft.thePlayer == null || minecraft.theWorld == null) {
@@ -37,20 +46,68 @@ public final class MessageQueue {
             clear();
         }
 
-        boolean sendImmediately = chunks.isEmpty() 
-            && System.currentTimeMillis() >= nextSendAtMillis;
-
         queuedWorld = minecraft.theWorld;
-        chunks.addAll(lines);
+        getQueue(lane).addAll(lines);
 
-        if (sendImmediately) {
-            sendNext(minecraft);
+        trySendReady(minecraft);
+    }
+
+    private Deque<String> getQueue(Lane lane) {
+        return lane == Lane.REGULAR ? regularLines : commandLines;
+    }
+
+    private void trySendReady(Minecraft minecraft) {
+        trySendLane(minecraft, Lane.REGULAR);
+        trySendLane(minecraft, Lane.CONFIGURED_COMMAND);
+
+        if (isEmpty()) {
+            queuedWorld = null;
         }
+    }
+
+    private void trySendLane(Minecraft minecraft, Lane lane) {
+        Deque<String> queue = getQueue(lane);
+
+        if (queue.isEmpty() || System.currentTimeMillis() < getNextSendAt(lane)) {
+            return;
+        }
+
+        String line = queue.pollFirst();
+
+        sendingQueuedMessage = true;
+
+        try {
+            minecraft.thePlayer.sendChatMessage(line);
+        } finally {
+            sendingQueuedMessage = false;
+        }
+
+        setNextSendAt(
+            lane, System.currentTimeMillis() + getDelaySeconds(lane) * 1000L
+        );
+    }
+
+    private long getNextSendAt(Lane lane) {
+        return lane == Lane.REGULAR ? nextRegularSendAtMillis : nextCommandSendAtMillis;
+    }
+
+    private void setNextSendAt(Lane lane, long value) {
+        if (lane == Lane.REGULAR) {
+            nextRegularSendAtMillis = value;
+        } else {
+            nextCommandSendAtMillis = value;
+        }
+    }
+
+    private int getDelaySeconds(Lane lane) {
+        return lane == Lane.REGULAR
+            ? ExtendedMessages.getMessageDelaySeconds()
+            : ExtendedMessages.getCommandDelaySeconds();
     }
 
     @SubscribeEvent
     public void onClientTick(TickEvent.ClientTickEvent event) {
-        if (event.phase != TickEvent.Phase.END || chunks.isEmpty()) {
+        if (event.phase != TickEvent.Phase.END || isEmpty()) {
             return;
         }
 
@@ -62,47 +119,22 @@ public final class MessageQueue {
             return;
         }
 
-        if (System.currentTimeMillis() >= nextSendAtMillis) {
-            sendNext(minecraft);
-        }
+        trySendReady(minecraft);
+    }
+
+    private boolean isEmpty() {
+        return regularLines.isEmpty() && commandLines.isEmpty();
     }
 
     public void clear() {
-        chunks.clear();
+        regularLines.clear();
+        commandLines.clear();
         queuedWorld = null;
-        nextSendAtMillis = 0L;
-    }
-
-    private void sendNext(Minecraft minecraft) {
-        String chunk = chunks.pollFirst();
-
-        if (chunk == null) {
-            clear();
-            return;
-        }
-
-        sendingQueuedMessage = true;
-
-        try {
-            minecraft.thePlayer.sendChatMessage(chunk);
-        } finally {
-            sendingQueuedMessage = false;
-        }
-
-        nextSendAtMillis = System.currentTimeMillis() + ExtendedMessages.getMessageDelaySeconds() * 1000L;
-
-        if (chunks.isEmpty()) {
-            queuedWorld = null;
-            return;
-        }
-
+        nextRegularSendAtMillis = 0L;
+        nextCommandSendAtMillis = 0L;
     }
 
     public boolean isSendingQueuedMessage() {
         return sendingQueuedMessage;
-    }
-
-    public boolean shouldQueueNewMessages() {
-        return !chunks.isEmpty() || System.currentTimeMillis() < nextSendAtMillis;
     }
 }

@@ -24,6 +24,7 @@ public class ExtendedMessages {
     public static boolean enabled = Reference.DEFAULT_ENABLED;
     private static boolean splitEnabled = Reference.DEFAULT_SPLIT_ENABLED;
     private static int messageDelaySeconds = Reference.DEFAULT_MESSAGE_DELAY_SECONDS;
+    private static int commandDelaySeconds = Reference.DEFAULT_COMMAND_DELAY_SECONDS;
 
     private static boolean messagePrefixEnabled = Reference.DEFAULT_MESSAGE_PREFIX_ENABLED;
     private static String messagePrefix = Reference.DEFAULT_MESSAGE_PREFIX;
@@ -59,24 +60,38 @@ public class ExtendedMessages {
         return enabled;
     }
 
+    private static void validateDelaySeconds(int seconds) {
+        if (seconds < Reference.MIN_DELAY_SECONDS
+                || seconds > Reference.MAX_DELAY_SECONDS) {
+            throw new IllegalArgumentException(
+                "Delay must be between "
+                    + Reference.MIN_DELAY_SECONDS
+                    + " and "
+                    + Reference.MAX_DELAY_SECONDS
+                    + " secs"
+            );
+        }
+    }
+
     public static int getMessageDelaySeconds() {
         return messageDelaySeconds;
     }
 
     public static void setMessageDelaySeconds(int seconds) {
-        if (seconds < Reference.MIN_MESSAGE_DELAY_SECONDS
-                || seconds > Reference.MAX_MESSAGE_DELAY_SECONDS) {
-            throw new IllegalArgumentException(
-                "Message delay must be between "
-                    + Reference.MIN_MESSAGE_DELAY_SECONDS
-                    + " and "
-                    + Reference.MAX_MESSAGE_DELAY_SECONDS
-                    + " secs"
-            );
-        }
+        validateDelaySeconds(seconds);
 
         messageDelaySeconds = seconds;
         ExtendedMessagesConfig.saveMessageDelaySeconds(seconds);
+    }
+
+    public static int getCommandDelaySeconds() {
+        return commandDelaySeconds;
+    }
+
+    public static void setCommandDelaySeconds(int seconds) {
+        validateDelaySeconds(seconds);
+        commandDelaySeconds = seconds;
+        ExtendedMessagesConfig.saveCommandDelaySeconds(seconds);
     }
 
     public static boolean isMessagePrefixEnabled() {
@@ -188,6 +203,7 @@ public class ExtendedMessages {
         enabled = ExtendedMessagesConfig.getEnabled();
         splitEnabled = ExtendedMessagesConfig.getSplitEnabled();
         messageDelaySeconds = ExtendedMessagesConfig.getMessageDelaySeconds();
+        commandDelaySeconds = ExtendedMessagesConfig.getCommandDelaySeconds();
 
         messagePrefixEnabled = ExtendedMessagesConfig.getMessagePrefixEnabled();
         messagePrefix = ExtendedMessagesConfig.getMessagePrefix();

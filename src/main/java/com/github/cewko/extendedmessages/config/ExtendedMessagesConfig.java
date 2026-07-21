@@ -12,6 +12,7 @@ public final class ExtendedMessagesConfig {
     private static final String KEY_ENABLED = "enabled";
     private static final String KEY_SPLIT_ENABLED = "splitLongMessages";
     private static final String KEY_MESSAGE_DELAY = "messageDelaySeconds";
+    private static final String KEY_COMMAND_DELAY = "commandDelaySeconds";
 
     private static final String KEY_MESSAGE_PREFIX_ENABLED = "messagePrefixEnabled";
     private static final String KEY_MESSAGE_PREFIX = "messagePrefix";
@@ -24,6 +25,7 @@ public final class ExtendedMessagesConfig {
     private static Property enabledProperty;
     private static Property splitEnabledProperty;
     private static Property messageDelayProperty;
+    private static Property commandDelayProperty;
 
     private static Property messagePrefixEnabledProperty;
     private static Property messagePrefixProperty;
@@ -59,7 +61,14 @@ public final class ExtendedMessagesConfig {
             Configuration.CATEGORY_GENERAL,
             KEY_MESSAGE_DELAY,
             Reference.DEFAULT_MESSAGE_DELAY_SECONDS,
-            "Delay in seconds between message chunks."
+            "Delay in seconds between regular message chunks."
+        );
+
+        commandDelayProperty = configuration.get(
+            Configuration.CATEGORY_GENERAL,
+            KEY_COMMAND_DELAY,
+            Reference.DEFAULT_COMMAND_DELAY_SECONDS,
+            "Delay in seconds between configured command message chunks."
         );
 
         messagePrefixEnabledProperty = configuration.get(
@@ -110,8 +119,20 @@ public final class ExtendedMessagesConfig {
             Reference.DEFAULT_MESSAGE_DELAY_SECONDS
         );
         return Math.max(
-            Reference.MIN_MESSAGE_DELAY_SECONDS,
-            Math.min(Reference.MAX_MESSAGE_DELAY_SECONDS, value)
+            Reference.MIN_DELAY_SECONDS,
+            Math.min(Reference.MAX_DELAY_SECONDS, value)
+        );
+    }
+
+    public static int getCommandDelaySeconds() {
+        ensureLoaded();
+
+        int value = commandDelayProperty.getInt(
+            Reference.DEFAULT_COMMAND_DELAY_SECONDS
+        );
+        return Math.max(
+            Reference.MIN_DELAY_SECONDS,
+            Math.min(Reference.MAX_DELAY_SECONDS, value)
         );
     }
 
@@ -162,6 +183,12 @@ public final class ExtendedMessagesConfig {
     public static void saveMessageDelaySeconds(int seconds) {
         ensureLoaded();
         messageDelayProperty.set(seconds);
+        saveIfChanged();
+    }
+
+    public static void saveCommandDelaySeconds(int seconds) {
+        ensureLoaded();
+        commandDelayProperty.set(seconds);
         saveIfChanged();
     }
 

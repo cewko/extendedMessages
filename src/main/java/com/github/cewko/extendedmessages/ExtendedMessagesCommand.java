@@ -14,21 +14,21 @@ public final class ExtendedMessagesCommand extends CommandBase {
 
     @Override
     public String getCommandName() {
-        return "extendedmessages";
+        return Reference.COMMAND_NAME;
     }
 
     @Override
     public List<String> getCommandAliases() {
-        return Collections.singletonList("em");
+        return Collections.singletonList(Reference.COMMAND_ALIAS);
     }
 
     @Override
     public String getCommandUsage(ICommandSender sender) {
         return "/em [toggle|split|delay <"
-            + Reference.MIN_MESSAGE_DELAY_SECONDS
+            + Reference.MIN_DELAY_SECONDS
             + "-"
-            + Reference.MAX_MESSAGE_DELAY_SECONDS
-            + ">|prefix <toggle|set|remove>|party <toggle|set>]";
+            + Reference.MAX_DELAY_SECONDS
+            + ">|prefix <toggle|set|remove>|command <toggle|set <command>|delay <seconds>>]";
     }
 
     @Override
@@ -66,8 +66,8 @@ public final class ExtendedMessagesCommand extends CommandBase {
 
             int seconds = parseInt(
                 args[1],
-                Reference.MIN_MESSAGE_DELAY_SECONDS,
-                Reference.MAX_MESSAGE_DELAY_SECONDS
+                Reference.MIN_DELAY_SECONDS,
+                Reference.MAX_DELAY_SECONDS
             );
 
             ExtendedMessages.setMessageDelaySeconds(seconds);
@@ -76,9 +76,7 @@ public final class ExtendedMessagesCommand extends CommandBase {
                 sender,
                 "Message delay: "
                     + EnumChatFormatting.AQUA
-                    + seconds
-                    + EnumChatFormatting.GRAY
-                    + (seconds == 1 ? " second" : " seconds")
+                    + formatSeconds(seconds)
             );
 
             return;
@@ -89,8 +87,8 @@ public final class ExtendedMessagesCommand extends CommandBase {
             return;
         }
 
-        if ("party".equalsIgnoreCase(args[0])) {
-            handlePartyCommand(sender, args);
+        if ("command".equalsIgnoreCase(args[0])) {
+            handleCommandSettings(sender, args);
             return;
         }
 
@@ -142,17 +140,17 @@ public final class ExtendedMessagesCommand extends CommandBase {
             );
         }
 
-    private void handlePartyCommand(
+    private void handleCommandSettings(
         ICommandSender sender, String[] args) throws CommandException {
 
             if (args.length == 1) {
-                showPartyStatus(sender);
+                showConfiguredCommandStatus(sender);
                 return;
             }
 
             if (args.length == 2 && "toggle".equalsIgnoreCase(args[1])) {
                 boolean enabled = ExtendedMessages.toggleCommandPrefixEnabled();
-                sendLine(sender, "Party command: " + formatState(enabled));
+                sendLine(sender, "Configured command: " + formatState(enabled));
                 return;
             }
 
@@ -168,13 +166,34 @@ public final class ExtendedMessagesCommand extends CommandBase {
                 }
 
                 sendLine(sender, 
-                    "Party command set to " + formatValue(
+                    "Configured command set to " + formatValue(
                         ExtendedMessages.getCommandPrefix()));
 
                 return;
             }
 
-            throw new WrongUsageException("/em party [toggle|set <command>]");
+            if (args.length == 3 && "delay".equalsIgnoreCase(args[1])) {
+                int seconds = parseInt(
+                    args[2],
+                    Reference.MIN_DELAY_SECONDS,
+                    Reference.MAX_DELAY_SECONDS
+                );
+
+                ExtendedMessages.setCommandDelaySeconds(seconds);
+
+                sendLine(
+                    sender,
+                    "Command delay: "
+                        + EnumChatFormatting.AQUA
+                        + formatSeconds(seconds)
+                );
+
+                return;
+            }
+
+            throw new WrongUsageException(
+                "/em command [toggle|set <command>|delay <seconds>]"
+            );
         }
 
     private String joinArgs(String[] args, int startIndex) {
@@ -211,14 +230,20 @@ public final class ExtendedMessagesCommand extends CommandBase {
         ));
 
         int delay = ExtendedMessages.getMessageDelaySeconds();
+        int commandDelay = ExtendedMessages.getCommandDelaySeconds();
 
         sender.addChatMessage(new ChatComponentText(
             EnumChatFormatting.GRAY
                 + "Message delay: "
                 + EnumChatFormatting.AQUA
-                + delay
-                + EnumChatFormatting.GRAY
-                + (delay == 1 ? " second" : " seconds")
+                + formatSeconds(delay)
+        ));
+
+        sender.addChatMessage(new ChatComponentText(
+            EnumChatFormatting.GRAY
+                + "Command delay: "
+                + EnumChatFormatting.AQUA
+                + formatSeconds(commandDelay)
         ));
 
         sender.addChatMessage(new ChatComponentText(
@@ -237,6 +262,11 @@ public final class ExtendedMessagesCommand extends CommandBase {
         ));
 
         sender.addChatMessage(new ChatComponentText(
+            EnumChatFormatting.DARK_GRAY
+                + "/em command delay <seconds>"
+        ));
+
+        sender.addChatMessage(new ChatComponentText(
             EnumChatFormatting.GRAY + "Message prefix: "
                 + formatState(ExtendedMessages.isMessagePrefixEnabled())
                 + EnumChatFormatting.GRAY
@@ -245,7 +275,7 @@ public final class ExtendedMessagesCommand extends CommandBase {
         ));
 
         sender.addChatMessage(new ChatComponentText(
-            EnumChatFormatting.GRAY + "Party command: "
+            EnumChatFormatting.GRAY + "Configured command: "
                 + formatState(ExtendedMessages.isCommandPrefixEnabled())
                 + EnumChatFormatting.GRAY
                 + " "
@@ -267,16 +297,23 @@ public final class ExtendedMessagesCommand extends CommandBase {
         );
     }
 
-    private void showPartyStatus(ICommandSender sender) {
-        sendLine(sender, "Party command: "
+    private void showConfiguredCommandStatus(ICommandSender sender) {
+        sendLine(sender, "Configured command: "
             + formatState(
                 ExtendedMessages.isCommandPrefixEnabled()
             )
         );
 
-        sendLine(sender, "Party command value: "
+        sendLine(sender, "Configured command value: "
             + formatValue(
                 ExtendedMessages.getCommandPrefix()
+            )
+        );
+
+        sendLine(sender, "Command delay: "
+            + EnumChatFormatting.AQUA
+            + formatSeconds(
+                ExtendedMessages.getCommandDelaySeconds()
             )
         );
     }
@@ -300,6 +337,12 @@ public final class ExtendedMessagesCommand extends CommandBase {
 
         return EnumChatFormatting.RED
             + " (unsafe; servers might kick you)";
+    }
+
+    private String formatSeconds(int seconds) {
+        return String.valueOf(seconds)
+            + EnumChatFormatting.GRAY
+            + (seconds == 1 ? " second" : " seconds");
     }
 
     private String formatValue(String value) {
