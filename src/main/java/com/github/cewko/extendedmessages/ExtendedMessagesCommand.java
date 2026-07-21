@@ -28,6 +28,10 @@ public final class ExtendedMessagesCommand extends CommandBase {
             + Reference.MIN_DELAY_SECONDS
             + "-"
             + Reference.MAX_DELAY_SECONDS
+            + ">|history <"
+            + Reference.MIN_MESSAGE_HISTORY_LENGTH
+            + "-"
+            + Reference.MAX_MESSAGE_HISTORY_LENGTH
             + ">|prefix <toggle|set|remove>|command <toggle|set <command>|delay <seconds>>]";
     }
 
@@ -77,6 +81,27 @@ public final class ExtendedMessagesCommand extends CommandBase {
                 "Message delay: "
                     + EnumChatFormatting.AQUA
                     + formatSeconds(seconds)
+            );
+
+            return;
+        }
+
+        if (args.length == 2 && "history".equalsIgnoreCase(args[0])) {
+            int length = parseInt(
+                args[1],
+                Reference.MIN_MESSAGE_HISTORY_LENGTH,
+                Reference.MAX_MESSAGE_HISTORY_LENGTH
+            );
+
+            ExtendedMessages.setMessageHistoryLength(length);
+
+            sendLine(
+                sender,
+                "message history length: "
+                + EnumChatFormatting.AQUA
+                + length
+                + EnumChatFormatting.GRAY
+                + " lines"
             );
 
             return;
@@ -267,6 +292,11 @@ public final class ExtendedMessagesCommand extends CommandBase {
         ));
 
         sender.addChatMessage(new ChatComponentText(
+            EnumChatFormatting.DARK_GRAY
+                + "/em history <lines>"
+        ));
+
+        sender.addChatMessage(new ChatComponentText(
             EnumChatFormatting.GRAY + "Message prefix: "
                 + formatState(ExtendedMessages.isMessagePrefixEnabled())
                 + EnumChatFormatting.GRAY
@@ -280,6 +310,15 @@ public final class ExtendedMessagesCommand extends CommandBase {
                 + EnumChatFormatting.GRAY
                 + " "
                 + formatValue(ExtendedMessages.getCommandPrefix())
+        ));
+
+        sender.addChatMessage(new ChatComponentText(
+            EnumChatFormatting.GRAY
+                + "Message history length: "
+                + EnumChatFormatting.AQUA
+                + ExtendedMessages.getMessageHistoryLength()
+                + EnumChatFormatting.GRAY
+                + " lines"
         ));
     }
 

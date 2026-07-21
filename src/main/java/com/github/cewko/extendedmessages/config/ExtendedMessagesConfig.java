@@ -20,6 +20,8 @@ public final class ExtendedMessagesConfig {
     private static final String KEY_COMMAND_PREFIX_ENABLED = "commandPrefixEnabled";
     private static final String KEY_COMMAND_PREFIX = "commandPrefix";
 
+    private static final String KEY_MESSAGE_HISTORY_LENGTH = "messageHistoryLength";
+
     private static Configuration configuration;
 
     private static Property enabledProperty;
@@ -32,6 +34,8 @@ public final class ExtendedMessagesConfig {
 
     private static Property commandPrefixEnabledProperty;
     private static Property commandPrefixProperty;
+
+    private static Property messageHistoryLengthProperty;
 
     private ExtendedMessagesConfig() {
         // prevent creating instances
@@ -99,6 +103,13 @@ public final class ExtendedMessagesConfig {
             "Message command repeated before every command message chunk"
         );
 
+        messageHistoryLengthProperty = configuration.get(
+            Configuration.CATEGORY_GENERAL,
+            KEY_MESSAGE_HISTORY_LENGTH,
+            Reference.DEFAULT_MESSAGE_HISTORY_LENGTH,
+            "maximum number of message history length"
+        );
+
         saveIfChanged();
     }
 
@@ -160,6 +171,19 @@ public final class ExtendedMessagesConfig {
         return commandPrefixProperty.getString();
     }
 
+    public static int getMessageHistoryLength() {
+        ensureLoaded();
+        
+        int value = messageHistoryLengthProperty.getInt(
+            Reference.DEFAULT_MESSAGE_HISTORY_LENGTH
+        );
+
+        return Math.max(
+            Reference.MIN_MESSAGE_HISTORY_LENGTH,
+            Math.min(Reference.MAX_MESSAGE_HISTORY_LENGTH, value)
+        );
+    }
+
     public static void ensureLoaded() {
         if (configuration == null) {
             throw new IllegalStateException(
@@ -213,6 +237,12 @@ public final class ExtendedMessagesConfig {
     public static void saveCommandPrefix(String prefix) {
         ensureLoaded();
         commandPrefixProperty.set(prefix);
+        saveIfChanged();
+    }
+
+    public static void saveMessageHistoryLength(int length) {
+        ensureLoaded();
+        messageHistoryLengthProperty.set(length);
         saveIfChanged();
     }
 

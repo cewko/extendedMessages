@@ -28,6 +28,11 @@ public final class Reference {
     public static final boolean DEFAULT_COMMAND_PREFIX_ENABLED = true;
     public static final String DEFAULT_COMMAND_PREFIX = "/pc";
 
+    public static final int VANILLA_MESSAGE_HISTORY_LENGTH = 100;
+    public static final int MIN_MESSAGE_HISTORY_LENGTH = 100;
+    public static final int MAX_MESSAGE_HISTORY_LENGTH = 5000;
+    public static final int DEFAULT_MESSAGE_HISTORY_LENGTH = 1000;
+
     private Reference() {
         // prevent creating instances
     }

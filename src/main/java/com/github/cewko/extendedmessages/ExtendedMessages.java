@@ -32,6 +32,8 @@ public class ExtendedMessages {
     private static boolean commandPrefixEnabled = Reference.DEFAULT_COMMAND_PREFIX_ENABLED;
     private static String commandPrefix = Reference.DEFAULT_COMMAND_PREFIX;
 
+    private static int messageHistoryLength = Reference.DEFAULT_MESSAGE_HISTORY_LENGTH;
+
     public static boolean isEnabled() {
         return enabled;
     }
@@ -194,6 +196,33 @@ public class ExtendedMessages {
             : Reference.EXTENDED_MESSAGE_LIMIT;
     }
 
+    public static int getMessageHistoryLength() {
+        return messageHistoryLength;
+    }
+
+    public static void setMessageHistoryLength(int length) {
+        validateHistoryLength(length);
+        messageHistoryLength = length;
+        ExtendedMessagesConfig.saveMessageHistoryLength(length);
+    }
+
+    public static int getCurrentMessageHistoryLength() {
+        return enabled ? messageHistoryLength : Reference.VANILLA_MESSAGE_HISTORY_LENGTH;
+    }
+
+    private static void validateHistoryLength(int length) {
+        if (length < Reference.MIN_MESSAGE_HISTORY_LENGTH
+                || length > Reference.MAX_MESSAGE_HISTORY_LENGTH) {
+            throw new IllegalArgumentException(
+                "history length must be between "
+                    + Reference.MIN_MESSAGE_HISTORY_LENGTH
+                    + " and "
+                    + Reference.MAX_MESSAGE_HISTORY_LENGTH
+                    + " lines"
+            );
+        }
+    }
+
     @Mod.EventHandler
     public void preInit(FMLPreInitializationEvent event) {
         ExtendedMessagesConfig.load(
@@ -210,6 +239,8 @@ public class ExtendedMessages {
 
         commandPrefixEnabled = ExtendedMessagesConfig.getCommandPrefixEnabled();
         commandPrefix = ExtendedMessagesConfig.getCommandPrefix();
+
+        messageHistoryLength = ExtendedMessagesConfig.getMessageHistoryLength();
     }
 
     @Mod.EventHandler
