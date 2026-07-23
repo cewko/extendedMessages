@@ -1,5 +1,7 @@
 package com.github.cewko.extendedmessages;
 
+import com.github.cewko.extendedmessages.gui.GuiOpener;
+
 import java.util.Collections;
 import java.util.List;
 
@@ -24,7 +26,7 @@ public final class ExtendedMessagesCommand extends CommandBase {
 
     @Override
     public String getCommandUsage(ICommandSender sender) {
-        return "/em [toggle|split|delay <"
+        return "/em [gui|toggle|split|delay <"
             + Reference.MIN_DELAY_SECONDS
             + "-"
             + Reference.MAX_DELAY_SECONDS
@@ -46,6 +48,11 @@ public final class ExtendedMessagesCommand extends CommandBase {
             
         if (args.length == 0) {
             showStatus(sender);
+            return;
+        }
+
+        if (args.length == 1 && "gui".equalsIgnoreCase(args[0])) {
+            GuiOpener.getInstance().requestOpen();
             return;
         }
 
@@ -319,6 +326,11 @@ public final class ExtendedMessagesCommand extends CommandBase {
                 + ExtendedMessages.getMessageHistoryLength()
                 + EnumChatFormatting.GRAY
                 + " lines"
+        ));
+
+        sender.addChatMessage(new ChatComponentText(
+            EnumChatFormatting.DARK_GRAY
+                + "/em gui"
         ));
     }
 

@@ -2,6 +2,7 @@ package com.github.cewko.extendedmessages;
 
 import com.github.cewko.extendedmessages.config.ExtendedMessagesConfig;
 import com.github.cewko.extendedmessages.messaging.MessageQueue;
+import com.github.cewko.extendedmessages.gui.GuiOpener;
 
 import net.minecraftforge.common.MinecraftForge;
 
@@ -123,6 +124,16 @@ public class ExtendedMessages {
     }
 
     public static void setMessagePrefix(String prefix) {
+        if (prefix == null) {
+            throw new IllegalArgumentException("Message prefix cannot be null");
+        }
+
+        prefix = prefix.trim();
+
+        if (prefix.isEmpty() && messagePrefixEnabled) {
+            throw new IllegalArgumentException("Message prefix is required");
+        }
+
         validatePrefix(prefix, "Message prefix");
         messagePrefix = prefix;
 
@@ -149,7 +160,13 @@ public class ExtendedMessages {
         prefix = prefix.trim();
 
         if (prefix.isEmpty()) {
-            throw new IllegalArgumentException("Command prefix cannot be empty");
+            if (commandPrefixEnabled) {
+                throw new IllegalArgumentException("Command prefix is required");
+            }
+
+            commandPrefix = "";
+            ExtendedMessagesConfig.saveCommandPrefix(commandPrefix);
+            return;
         }
 
         if (!prefix.startsWith("/")) {
@@ -174,9 +191,9 @@ public class ExtendedMessages {
             throw new IllegalArgumentException(displayName + " cannot contain new lines");
         }
 
-        if (prefix.length() >= Reference.DEFAULT_MESSAGE_LIMIT) {
+        if (prefix.length() > Reference.MAX_PREFIX_LENGTH ) {
             throw new IllegalArgumentException(
-                displayName + " must be shorter than " + Reference.DEFAULT_MESSAGE_LIMIT);
+                displayName + " must be at most  " + Reference.MAX_PREFIX_LENGTH + " characters");
         }
     }
 
@@ -250,6 +267,7 @@ public class ExtendedMessages {
         );
 
         MinecraftForge.EVENT_BUS.register(MessageQueue.getInstance());
+        MinecraftForge.EVENT_BUS.register(GuiOpener.getInstance());
         
         System.out.println("[" + Reference.NAME + "] Mod has loaded :3");
     }

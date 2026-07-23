@@ -15,7 +15,7 @@ public final class Reference {
     public static final int EXTENDED_MESSAGE_LIMIT = 256;
 
     public static final int MIN_DELAY_SECONDS = 0;
-    public static final int MAX_DELAY_SECONDS = 30;
+    public static final int MAX_DELAY_SECONDS = 120;
     public static final int DEFAULT_MESSAGE_DELAY_SECONDS = 3;
     public static final int DEFAULT_COMMAND_DELAY_SECONDS = 1;
 
@@ -30,8 +30,11 @@ public final class Reference {
 
     public static final int VANILLA_MESSAGE_HISTORY_LENGTH = 100;
     public static final int MIN_MESSAGE_HISTORY_LENGTH = 100;
-    public static final int MAX_MESSAGE_HISTORY_LENGTH = 5000;
+    public static final int MAX_MESSAGE_HISTORY_LENGTH = 65536;
     public static final int DEFAULT_MESSAGE_HISTORY_LENGTH = 1000;
+
+    public static final int MAX_PREFIX_LENGTH = DEFAULT_MESSAGE_LIMIT - 2;
+    public static final int GUI_PREFIX_INPUT_LIMIT = MAX_PREFIX_LENGTH + 1;
 
     private Reference() {
         // prevent creating instances
