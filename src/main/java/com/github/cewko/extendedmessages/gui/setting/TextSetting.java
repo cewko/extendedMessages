@@ -2,6 +2,8 @@ package com.github.cewko.extendedmessages.gui.setting;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import com.github.cewko.extendedmessages.gui.GuiLayout;
 import com.github.cewko.extendedmessages.gui.control.StyledTextField;
@@ -11,15 +13,10 @@ import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.GuiButton;
 
 public final class TextSetting implements GuiSetting {
-    public interface Value {
-        String get();
-
-        void set(String value);
-    }
-
     private final String label;
     private final int maxLength;
-    private final Value value;
+    private final Supplier<String> getter;
+    private final Consumer<String> setter;
 
     private FontRenderer fontRenderer;
     private StyledTextField textField;
@@ -27,10 +24,16 @@ public final class TextSetting implements GuiSetting {
     private int x;
     private int y;
 
-    public TextSetting(String label, int maxLength, Value value) {
+    public TextSetting(
+        String label,
+        int maxLength,
+        Supplier<String> getter,
+        Consumer<String> setter
+    ) {
         this.label = label;
         this.maxLength = maxLength;
-        this.value = value;
+        this.getter = getter;
+        this.setter = setter;
     }
 
     @Override
@@ -61,7 +64,7 @@ public final class TextSetting implements GuiSetting {
         );
 
         textField.setMaxStringLength(maxLength);
-        textField.setText(value.get());
+        textField.setText(getter.get());
     }
 
     @Override
@@ -95,7 +98,7 @@ public final class TextSetting implements GuiSetting {
 
     private boolean saveIfValid() {
         try {
-            value.set(textField.getText());
+            setter.accept(textField.getText());
             error = null;
             return true;
         } catch (IllegalArgumentException exception) {

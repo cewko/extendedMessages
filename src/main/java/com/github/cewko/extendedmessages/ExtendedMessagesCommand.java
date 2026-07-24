@@ -4,6 +4,11 @@ import com.github.cewko.extendedmessages.gui.GuiOpener;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
+import java.util.function.IntConsumer;
+import java.util.function.IntFunction;
+import java.util.function.Supplier;
 
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.ICommandSender;
@@ -13,22 +18,6 @@ import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.EnumChatFormatting;
 
 public final class ExtendedMessagesCommand extends CommandBase {
-    private interface BooleanToggle {
-        boolean toggle();
-    }
-
-    private interface StringSetter {
-        String set(String value);
-    }
-
-    private interface IntSetter {
-        void set(int value);
-    }
-
-    private interface IntFormatter {
-        String format(int value);
-    }
-
     private void handleIntSet(
         ICommandSender sender,
         String[] args,
@@ -36,8 +25,8 @@ public final class ExtendedMessagesCommand extends CommandBase {
         String displayName,
         int min,
         int max,
-        IntSetter setter,
-        IntFormatter formatter
+        IntConsumer setter,
+        IntFunction<String> formatter
     ) throws CommandException {
         if (args.length != 3 || !"set".equalsIgnoreCase(args[1])) {
             throw new WrongUsageException(usage);
@@ -46,12 +35,12 @@ public final class ExtendedMessagesCommand extends CommandBase {
         int value = parseInt(args[2], min, max);
 
         try {
-            setter.set(value);
+            setter.accept(value);
         } catch (IllegalArgumentException exception) {
             throw new CommandException(exception.getMessage());
         }
 
-        sendLine(sender, displayName + ": " + formatter.format(value));
+        sendLine(sender, displayName + ": " + formatter.apply(value));
     }
 
     @Override
@@ -97,19 +86,9 @@ public final class ExtendedMessagesCommand extends CommandBase {
                     args,
                     "/em mp <toggle|set <prefix>>",
                     "Message prefix",
-                    new BooleanToggle() {
-                        @Override
-                        public boolean toggle() {
-                            return ExtendedMessages.toggleMessagePrefixEnabled();
-                        }
-                    },
-                    new StringSetter() {
-                        @Override
-                        public String set(String value) {
-                            ExtendedMessages.setMessagePrefix(value);
-                            return ExtendedMessages.getMessagePrefix();
-                        }
-                    }
+                    ExtendedMessages::toggleMessagePrefixEnabled,
+                    ExtendedMessages::setMessagePrefix,
+                    ExtendedMessages::getMessagePrefix
                 );
                 return;
             case "cp":
@@ -118,19 +97,9 @@ public final class ExtendedMessagesCommand extends CommandBase {
                     args,
                     "/em cp <toggle|set <command>>",
                     "Command prefix",
-                    new BooleanToggle() {
-                        @Override
-                        public boolean toggle() {
-                            return ExtendedMessages.toggleCommandPrefixEnabled();
-                        }
-                    },
-                    new StringSetter() {
-                        @Override
-                        public String set(String value) {
-                            ExtendedMessages.setCommandPrefix(value);
-                            return ExtendedMessages.getCommandPrefix();
-                        }
-                    }
+                    ExtendedMessages::toggleCommandPrefixEnabled,
+                    ExtendedMessages::setCommandPrefix,
+                    ExtendedMessages::getCommandPrefix
                 );
                 return;
             case "mc":
@@ -141,18 +110,8 @@ public final class ExtendedMessagesCommand extends CommandBase {
                     "Message cooldown",
                     Reference.MIN_DELAY_SECONDS,
                     Reference.MAX_DELAY_SECONDS,
-                    new IntSetter() {
-                        @Override
-                        public void set(int value) {
-                            ExtendedMessages.setMessageDelaySeconds(value);
-                        }
-                    },
-                    new IntFormatter() {
-                        @Override
-                        public String format(int value) {
-                            return EnumChatFormatting.AQUA + formatSeconds(value);
-                        }
-                    }
+                    ExtendedMessages::setMessageDelaySeconds,
+                    value -> EnumChatFormatting.AQUA + formatSeconds(value)
                 );
                 return;
             case "cc":
@@ -163,18 +122,8 @@ public final class ExtendedMessagesCommand extends CommandBase {
                     "Command cooldown",
                     Reference.MIN_DELAY_SECONDS,
                     Reference.MAX_DELAY_SECONDS,
-                    new IntSetter() {
-                        @Override
-                        public void set(int value) {
-                            ExtendedMessages.setCommandDelaySeconds(value);
-                        }
-                    },
-                    new IntFormatter() {
-                        @Override
-                        public String format(int value) {
-                            return EnumChatFormatting.AQUA + formatSeconds(value);
-                        }
-                    }
+                    ExtendedMessages::setCommandDelaySeconds,
+                    value -> EnumChatFormatting.AQUA + formatSeconds(value)
                 );
                 return;
             case "h":
@@ -185,21 +134,11 @@ public final class ExtendedMessagesCommand extends CommandBase {
                     "History length",
                     Reference.MIN_MESSAGE_HISTORY_LENGTH,
                     Reference.MAX_MESSAGE_HISTORY_LENGTH,
-                    new IntSetter() {
-                        @Override
-                        public void set(int value) {
-                            ExtendedMessages.setMessageHistoryLength(value);
-                        }
-                    },
-                    new IntFormatter() {
-                        @Override
-                        public String format(int value) {
-                            return EnumChatFormatting.AQUA
-                                + String.valueOf(value)
-                                + EnumChatFormatting.GRAY
-                                + " lines";
-                        }
-                    }
+                    ExtendedMessages::setMessageHistoryLength,
+                    value -> EnumChatFormatting.AQUA
+                        + String.valueOf(value)
+                        + EnumChatFormatting.GRAY
+                        + " lines"
                 );
                 return;
 
@@ -224,8 +163,9 @@ public final class ExtendedMessagesCommand extends CommandBase {
         String[] args,
         String usage,
         String displayName,
-        BooleanToggle toggle,
-        StringSetter setter
+        BooleanSupplier toggler,
+        Consumer<String> setter,
+        Supplier<String> getter
     ) throws CommandException {
         if (args.length < 2) {
             throw new WrongUsageException(usage);
@@ -237,7 +177,7 @@ public final class ExtendedMessagesCommand extends CommandBase {
                     throw new WrongUsageException(usage);
                 }
 
-                boolean enabled = toggle.toggle();
+                boolean enabled = toggler.getAsBoolean();
                 sendLine(sender, displayName + ": " + formatState(enabled));
                 return;
 
@@ -246,7 +186,7 @@ public final class ExtendedMessagesCommand extends CommandBase {
                     throw new WrongUsageException(usage);
                 }
 
-                handleTextSet(sender, args, displayName, setter);
+                handleTextSet(sender, args, displayName, setter, getter);
                 return;
 
             default:
@@ -258,13 +198,15 @@ public final class ExtendedMessagesCommand extends CommandBase {
         ICommandSender sender,
         String[] args,
         String displayName,
-        StringSetter setter
+        Consumer<String> setter,
+        Supplier<String> getter
     ) throws CommandException {
         String value = joinArgs(args, 2);
         String storedValue;
 
         try {
-            storedValue = setter.set(value);
+            setter.accept(value);
+            storedValue = getter.get();
         } catch (IllegalArgumentException exception) {
             throw new CommandException(exception.getMessage());
         }

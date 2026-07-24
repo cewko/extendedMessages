@@ -1,17 +1,14 @@
 package com.github.cewko.extendedmessages.gui.control;
 
+import java.util.function.BooleanSupplier;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiButton;
 
 public final class StyledToggleButton extends GuiButton {
-    public interface Value {
-        boolean get();
-
-        void toggle();
-    }
-
     private final String label;
-    private final Value value;
+    private final BooleanSupplier getter;
+    private final Runnable toggler;
 
     public StyledToggleButton(
         int id,
@@ -20,11 +17,13 @@ public final class StyledToggleButton extends GuiButton {
         int width,
         int height,
         String label,
-        Value value
+        BooleanSupplier getter,
+        Runnable toggler
     ) {
         super(id, x, y, width, height, "");
         this.label = label;
-        this.value = value;
+        this.getter = getter;
+        this.toggler = toggler;
         updateText();
     }
 
@@ -33,7 +32,7 @@ public final class StyledToggleButton extends GuiButton {
         boolean pressed = super.mousePressed(minecraft, mouseX, mouseY);
 
         if (pressed) {
-            value.toggle();
+            toggler.run();
             updateText();
         }
 
@@ -49,7 +48,7 @@ public final class StyledToggleButton extends GuiButton {
     private void updateText() {
         displayString = label
             + ": "
-            + (value.get()
+            + (getter.getAsBoolean()
                 ? "\u00a7aON"
                 : "\u00a7cOFF");
     }

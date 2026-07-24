@@ -82,18 +82,9 @@ public final class ExtendedMessagesGui extends GuiScreen {
 
     private void addMainSettings() {
         mainSetting = new ToggleSetting(
-            "Remove 100-character limit", 
-            new ToggleSetting.Value() {
-                @Override
-                public boolean get() {
-                    return draft.isEnabled();
-                }
-
-                @Override
-                public void toggle() {
-                    draft.toggleEnabled();
-                }
-            }
+            "Remove 100-character limit",
+            draft::isEnabled,
+            draft::toggleEnabled
         );
 
         settings.add(mainSetting);
@@ -101,69 +92,37 @@ public final class ExtendedMessagesGui extends GuiScreen {
 
     private void addRegularSettings() {
         addRegularSetting(
-            new ToggleSetting("Split long messages", 
-            new ToggleSetting.Value() {
-                @Override
-                public boolean get() {
-                    return draft.isSplitEnabled();
-                }
-
-                @Override
-                public void toggle() {
-                    draft.toggleSplitEnabled();
-                }
-            }
-        ));
+            new ToggleSetting(
+                "Split long messages",
+                draft::isSplitEnabled,
+                draft::toggleSplitEnabled
+            )
+        );
 
         addRegularSetting(
             new SliderSetting(
                 "Message cooldown",
                 Reference.MIN_DELAY_SECONDS,
                 Reference.MAX_DELAY_SECONDS,
-                new SliderSetting.Value() {
-                    @Override
-                    public int get() {
-                        return draft.getMessageDelaySeconds();
-                    }
-
-                    @Override
-                    public void set(int value) {
-                        draft.setMessageDelaySeconds(value);
-                    }
-                }
+                draft::getMessageDelaySeconds,
+                draft::setMessageDelaySeconds
             )
         );
 
         addRegularSetting(
-            new ToggleSetting("Message prefix", 
-            new ToggleSetting.Value() {
-                @Override
-                public boolean get() {
-                    return draft.isMessagePrefixEnabled();
-                }
-
-                @Override
-                public void toggle() {
-                    draft.toggleMessagePrefixEnabled();
-                }
-            }
-        ));
+            new ToggleSetting(
+                "Message prefix",
+                draft::isMessagePrefixEnabled,
+                draft::toggleMessagePrefixEnabled
+            )
+        );
 
         addRegularSetting(
             new TextSetting(
                 "Message prefix",
                 Reference.GUI_PREFIX_INPUT_LIMIT,
-                new TextSetting.Value() {
-                    @Override
-                    public String get() {
-                        return draft.getMessagePrefix();
-                    }
-
-                    @Override
-                    public void set(String value) {
-                        draft.setMessagePrefix(value);
-                    }
-                }
+                draft::getMessagePrefix,
+                draft::setMessagePrefix
             )
         );
 
@@ -172,17 +131,8 @@ public final class ExtendedMessagesGui extends GuiScreen {
                 "History length",
                 Reference.MIN_MESSAGE_HISTORY_LENGTH,
                 Reference.MAX_MESSAGE_HISTORY_LENGTH,
-                new IntegerSetting.Value() {
-                    @Override
-                    public int get() {
-                        return draft.getMessageHistoryLength();
-                    }
-
-                    @Override
-                    public void set(int value) {
-                        draft.setMessageHistoryLength(value);
-                    }
-                }
+                draft::getMessageHistoryLength,
+                draft::setMessageHistoryLength
             )
         );
     }
@@ -190,18 +140,9 @@ public final class ExtendedMessagesGui extends GuiScreen {
     private void addCommandSettings() {
         addCommandSetting(
             new ToggleSetting(
-                "Configured command", 
-                new ToggleSetting.Value() {
-                    @Override
-                    public boolean get() {
-                        return draft.isCommandPrefixEnabled();
-                    }
-
-                    @Override
-                    public void toggle() {
-                        draft.toggleCommandPrefixEnabled();
-                    }
-                }
+                "Configured command",
+                draft::isCommandPrefixEnabled,
+                draft::toggleCommandPrefixEnabled
             )
         );
 
@@ -210,35 +151,19 @@ public final class ExtendedMessagesGui extends GuiScreen {
                 "Command cooldown",
                 Reference.MIN_DELAY_SECONDS,
                 Reference.MAX_DELAY_SECONDS,
-                new SliderSetting.Value() {
-                    @Override
-                    public int get() {
-                        return draft.getCommandDelaySeconds();
-                    }
-
-                    @Override
-                    public void set(int value) {
-                        draft.setCommandDelaySeconds(value);
-                    }
-                }
+                draft::getCommandDelaySeconds,
+                draft::setCommandDelaySeconds
             )
         );
 
-        addCommandSetting(new TextSetting(
-            "Command prefix",
-            Reference.GUI_PREFIX_INPUT_LIMIT,
-            new TextSetting.Value() {
-                @Override
-                public String get() {
-                    return draft.getCommandPrefix();
-                }
-
-                @Override
-                public void set(String value) {
-                    draft.setCommandPrefix(value);
-                }
-            }
-        ));
+        addCommandSetting(
+            new TextSetting(
+                "Command prefix",
+                Reference.GUI_PREFIX_INPUT_LIMIT,
+                draft::getCommandPrefix,
+                draft::setCommandPrefix
+            )
+        );
     }
 
     private void addRegularSetting(GuiSetting setting) {

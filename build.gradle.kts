@@ -12,10 +12,7 @@ plugins {
 
 val baseGroup: String by project
 val mcVersion: String by project
-val version: String by project
-val mixinGroup = "$baseGroup.mixin"
 val modid: String by project
-val transformerFile = file("src/main/resources/accesstransformer.cfg")
 
 // Toolchains:
 java {
@@ -34,7 +31,6 @@ tasks.withType<JavaExec>().configureEach {
 loom {
     launchConfigs {
         "client" {
-            // If you don't want mixins, remove these lines
             property("mixin.debug", "true")
             arg("--tweakClass", "org.spongepowered.asm.launch.MixinTweaker")
         }
@@ -52,10 +48,6 @@ loom {
         pack200Provider.set(dev.architectury.pack200.java.Pack200Adapter())
         // If you don't want mixins, remove this lines
         mixinConfig("mixins.$modid.json")
-	    if (transformerFile.exists()) {
-			println("Installing access transformer")
-		    accessTransformer(transformerFile)
-	    }
     }
     // If you don't want mixins, remove these lines
     mixin {
@@ -111,8 +103,6 @@ tasks.withType(org.gradle.jvm.tasks.Jar::class) {
         // If you don't want mixins, remove these lines
         this["TweakClass"] = "org.spongepowered.asm.launch.MixinTweaker"
         this["MixinConfigs"] = "mixins.$modid.json"
-	    if (transformerFile.exists())
-			this["FMLAT"] = "${modid}_at.cfg"
     }
 }
 
@@ -125,8 +115,6 @@ tasks.processResources {
     filesMatching(listOf("mcmod.info", "mixins.$modid.json")) {
         expand(inputs.properties)
     }
-
-    rename("accesstransformer.cfg", "META-INF/${modid}_at.cfg")
 }
 
 
@@ -150,9 +138,6 @@ tasks.shadowJar {
             println("Copying dependencies into mod: ${it.files}")
         }
     }
-
-    // If you want to include other dependencies and shadow them, you can relocate them in here
-    fun relocate(name: String) = relocate(name, "$baseGroup.deps.$name")
 }
 
 tasks.assemble.get().dependsOn(tasks.remapJar)

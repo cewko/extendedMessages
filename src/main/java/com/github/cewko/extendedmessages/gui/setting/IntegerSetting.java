@@ -2,6 +2,8 @@ package com.github.cewko.extendedmessages.gui.setting;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.function.IntConsumer;
+import java.util.function.IntSupplier;
 
 import com.github.cewko.extendedmessages.gui.GuiLayout;
 import com.github.cewko.extendedmessages.gui.control.StyledTextField;
@@ -11,16 +13,11 @@ import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.GuiButton;
 
 public final class IntegerSetting implements GuiSetting {
-    public interface Value {
-        int get();
-
-        void set(int value);
-    }
-
     private final String label;
     private final int min;
     private final int max;
-    private final Value value;
+    private final IntSupplier getter;
+    private final IntConsumer setter;
 
     private FontRenderer fontRenderer;
     private StyledTextField textField;
@@ -28,11 +25,18 @@ public final class IntegerSetting implements GuiSetting {
     private int x;
     private int y;
 
-    public IntegerSetting(String label, int min, int max, Value value) {
+    public IntegerSetting(
+        String label,
+        int min,
+        int max,
+        IntSupplier getter,
+        IntConsumer setter
+    ) {
         this.label = label;
         this.min = min;
         this.max = max;
-        this.value = value;
+        this.getter = getter;
+        this.setter = setter;
     }
 
     @Override
@@ -63,7 +67,7 @@ public final class IntegerSetting implements GuiSetting {
         );
 
         textField.setMaxStringLength(String.valueOf(max).length());
-        textField.setText(String.valueOf(value.get()));
+        textField.setText(String.valueOf(getter.getAsInt()));
         textField.setPlaceholder(min + "-" + max);
     }
 
@@ -112,7 +116,7 @@ public final class IntegerSetting implements GuiSetting {
                 return false;
             }
 
-            value.set(parsed);
+            setter.accept(parsed);
             error = null;
             return true;
         } catch (NumberFormatException exception) {

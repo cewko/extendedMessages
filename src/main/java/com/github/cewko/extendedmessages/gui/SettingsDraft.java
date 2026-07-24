@@ -1,7 +1,7 @@
 package com.github.cewko.extendedmessages.gui;
 
 import com.github.cewko.extendedmessages.ExtendedMessages;
-import com.github.cewko.extendedmessages.Reference;
+import com.github.cewko.extendedmessages.SettingsValidation;
 
 public final class SettingsDraft {
     private boolean enabled;
@@ -87,7 +87,7 @@ public final class SettingsDraft {
 
     public void setMessagePrefix(String prefix) {
         messagePrefix = prefix;
-        ExtendedMessages.normalizeMessagePrefix(prefix);
+        SettingsValidation.normalizeMessagePrefix(prefix);
     }
 
     public boolean isCommandPrefixEnabled() {
@@ -104,7 +104,7 @@ public final class SettingsDraft {
 
     public void setCommandPrefix(String prefix) {
         commandPrefix = prefix;
-        ExtendedMessages.normalizeCommandPrefix(prefix);
+        SettingsValidation.normalizeCommandPrefix(prefix);
     }
 
     public int getMessageHistoryLength() {
@@ -116,86 +116,30 @@ public final class SettingsDraft {
     }
 
     public void validate() {
-        ExtendedMessages.normalizeMessagePrefix(messagePrefix);
-        ExtendedMessages.normalizeCommandPrefix(commandPrefix);
-
-        if (messageDelaySeconds < Reference.MIN_DELAY_SECONDS
-                || messageDelaySeconds > Reference.MAX_DELAY_SECONDS) {
-            throw new IllegalArgumentException(
-                "Message cooldown must be between "
-                    + Reference.MIN_DELAY_SECONDS
-                    + " and "
-                    + Reference.MAX_DELAY_SECONDS
-                    + " seconds"
-            );
-        }
-
-        if (commandDelaySeconds < Reference.MIN_DELAY_SECONDS
-                || commandDelaySeconds > Reference.MAX_DELAY_SECONDS) {
-            throw new IllegalArgumentException(
-                "Command cooldown must be between "
-                    + Reference.MIN_DELAY_SECONDS
-                    + " and "
-                    + Reference.MAX_DELAY_SECONDS
-                    + " seconds"
-            );
-        }
-
-        if (messageHistoryLength < Reference.MIN_MESSAGE_HISTORY_LENGTH
-                || messageHistoryLength > Reference.MAX_MESSAGE_HISTORY_LENGTH) {
-            throw new IllegalArgumentException(
-                "History length must be between "
-                    + Reference.MIN_MESSAGE_HISTORY_LENGTH
-                    + " and "
-                    + Reference.MAX_MESSAGE_HISTORY_LENGTH
-                    + " lines"
-            );
-        }
+        SettingsValidation.normalizeMessagePrefix(messagePrefix);
+        SettingsValidation.normalizeCommandPrefix(commandPrefix);
+        SettingsValidation.validateDelaySeconds(messageDelaySeconds);
+        SettingsValidation.validateDelaySeconds(commandDelaySeconds);
+        SettingsValidation.validateHistoryLength(messageHistoryLength);
     }
 
     public void apply() {
         validate();
 
         String normalizedMessagePrefix =
-            ExtendedMessages.normalizeMessagePrefix(messagePrefix);
+            SettingsValidation.normalizeMessagePrefix(messagePrefix);
 
         String normalizedCommandPrefix =
-            ExtendedMessages.normalizeCommandPrefix(commandPrefix);
+            SettingsValidation.normalizeCommandPrefix(commandPrefix);
 
-        if (!normalizedMessagePrefix.equals(ExtendedMessages.getMessagePrefix())) {
-            ExtendedMessages.setMessagePrefix(normalizedMessagePrefix);
-        }
-
-        if (!normalizedCommandPrefix.equals(ExtendedMessages.getCommandPrefix())) {
-            ExtendedMessages.setCommandPrefix(normalizedCommandPrefix);
-        }
-
-        if (messageDelaySeconds != ExtendedMessages.getMessageDelaySeconds()) {
-            ExtendedMessages.setMessageDelaySeconds(messageDelaySeconds);
-        }
-
-        if (commandDelaySeconds != ExtendedMessages.getCommandDelaySeconds()) {
-            ExtendedMessages.setCommandDelaySeconds(commandDelaySeconds);
-        }
-
-        if (messageHistoryLength != ExtendedMessages.getMessageHistoryLength()) {
-            ExtendedMessages.setMessageHistoryLength(messageHistoryLength);
-        }
-
-        if (messagePrefixEnabled != ExtendedMessages.isMessagePrefixEnabled()) {
-            ExtendedMessages.toggleMessagePrefixEnabled();
-        }
-
-        if (commandPrefixEnabled != ExtendedMessages.isCommandPrefixEnabled()) {
-            ExtendedMessages.toggleCommandPrefixEnabled();
-        }
-
-        if (splitEnabled != ExtendedMessages.isSplitEnabled()) {
-            ExtendedMessages.toggleSplitEnabled();
-        }
-
-        if (enabled != ExtendedMessages.isEnabled()) {
-            ExtendedMessages.toggleEnabled();
-        }
+        ExtendedMessages.setMessagePrefix(normalizedMessagePrefix);
+        ExtendedMessages.setCommandPrefix(normalizedCommandPrefix);
+        ExtendedMessages.setMessageDelaySeconds(messageDelaySeconds);
+        ExtendedMessages.setCommandDelaySeconds(commandDelaySeconds);
+        ExtendedMessages.setMessageHistoryLength(messageHistoryLength);
+        ExtendedMessages.setMessagePrefixEnabled(messagePrefixEnabled);
+        ExtendedMessages.setCommandPrefixEnabled(commandPrefixEnabled);
+        ExtendedMessages.setSplitEnabled(splitEnabled);
+        ExtendedMessages.setEnabled(enabled);
     }
 }

@@ -1,5 +1,8 @@
 package com.github.cewko.extendedmessages.gui.control;
 
+import java.util.function.IntConsumer;
+import java.util.function.IntSupplier;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.renderer.GlStateManager;
@@ -7,16 +10,11 @@ import net.minecraft.client.renderer.GlStateManager;
 import com.github.cewko.extendedmessages.gui.GuiLayout;
 
 public final class StyledIntegerSlider extends GuiButton {
-    public interface Value {
-        int get();
-
-        void set(int value);
-    }
-
     private final String label;
     private final int min;
     private final int max;
-    private final Value value;
+    private final IntSupplier getter;
+    private final IntConsumer setter;
 
     private boolean dragging;
 
@@ -29,13 +27,15 @@ public final class StyledIntegerSlider extends GuiButton {
         String label,
         int min,
         int max,
-        Value value
+        IntSupplier getter,
+        IntConsumer setter
     ) {
         super(id, x, y, width, height, "");
         this.label = label;
         this.min = min;
         this.max = max;
-        this.value = value;
+        this.getter = getter;
+        this.setter = setter;
         updateText();
     }
 
@@ -112,8 +112,8 @@ public final class StyledIntegerSlider extends GuiButton {
 
         int newValue = Math.round(min + percent * (max - min));
 
-        if (newValue != value.get()) {
-            value.set(newValue);
+        if (newValue != getter.getAsInt()) {
+            setter.accept(newValue);
             updateText();
         }
     }
@@ -123,10 +123,10 @@ public final class StyledIntegerSlider extends GuiButton {
             return 0.0F;
         }
 
-        return (float) (value.get() - min) / (float) (max - min);
+        return (float) (getter.getAsInt() - min) / (float) (max - min);
     }
 
     private void updateText() {
-        displayString = label + ": " + value.get() + "s";
+        displayString = label + ": " + getter.getAsInt() + "s";
     }
 }

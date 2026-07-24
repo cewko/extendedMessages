@@ -1,10 +1,12 @@
 package com.github.cewko.extendedmessages.messaging;
 
 import com.github.cewko.extendedmessages.ExtendedMessages;
+import com.github.cewko.extendedmessages.Reference;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.World;
@@ -22,8 +24,8 @@ public final class MessageQueue {
     private final Deque<String> regularLines = new ArrayDeque<String>();
     private final Deque<String> commandLines = new ArrayDeque<String>();
 
-    private long nextRegularSendAtMillis;
-    private long nextCommandSendAtMillis;
+    private long nextRegularSendAtNanos;
+    private long nextCommandSendAtNanos;
 
     private World queuedWorld;
     private boolean sendingQueuedMessage;
@@ -59,16 +61,14 @@ public final class MessageQueue {
     private void trySendReady(Minecraft minecraft) {
         trySendLane(minecraft, Lane.REGULAR);
         trySendLane(minecraft, Lane.CONFIGURED_COMMAND);
-
-        if (isEmpty()) {
-            queuedWorld = null;
-        }
     }
 
     private void trySendLane(Minecraft minecraft, Lane lane) {
         Deque<String> queue = getQueue(lane);
+        long deadline = getNextSendAtNanos(lane);
+        long now = System.nanoTime();
 
-        if (queue.isEmpty() || System.currentTimeMillis() < getNextSendAt(lane)) {
+        if (queue.isEmpty() || (deadline != 0L && now - deadline < 0L)) {
             return;
         }
 
@@ -82,21 +82,37 @@ public final class MessageQueue {
             sendingQueuedMessage = false;
         }
 
-        setNextSendAt(
-            lane, System.currentTimeMillis() + getDelaySeconds(lane) * 1000L
+        setNextSendAtNanos(
+            lane,
+            System.nanoTime() + getCooldownNanos(lane)
         );
     }
 
-    private long getNextSendAt(Lane lane) {
-        return lane == Lane.REGULAR ? nextRegularSendAtMillis : nextCommandSendAtMillis;
+    private long getNextSendAtNanos(Lane lane) {
+        return lane == Lane.REGULAR
+            ? nextRegularSendAtNanos
+            : nextCommandSendAtNanos;
     }
 
-    private void setNextSendAt(Lane lane, long value) {
+    private void setNextSendAtNanos(Lane lane, long value) {
         if (lane == Lane.REGULAR) {
-            nextRegularSendAtMillis = value;
+            nextRegularSendAtNanos = value;
         } else {
-            nextCommandSendAtMillis = value;
+            nextCommandSendAtNanos = value;
         }
+    }
+
+    private long getCooldownNanos(Lane lane) {
+        int delaySeconds = getDelaySeconds(lane);
+        long cooldownNanos = TimeUnit.SECONDS.toNanos(delaySeconds);
+
+        if (delaySeconds > 0) {
+            cooldownNanos += TimeUnit.MILLISECONDS.toNanos(
+                Reference.SEND_SAFETY_MARGIN_MILLIS
+            );
+        }
+
+        return cooldownNanos;
     }
 
     private int getDelaySeconds(Lane lane) {
@@ -107,11 +123,19 @@ public final class MessageQueue {
 
     @SubscribeEvent
     public void onClientTick(TickEvent.ClientTickEvent event) {
-        if (event.phase != TickEvent.Phase.END || isEmpty()) {
+        if (event.phase != TickEvent.Phase.END) {
             return;
         }
 
         Minecraft minecraft = Minecraft.getMinecraft();
+
+        if (queuedWorld != null && minecraft.theWorld != queuedWorld) {
+            clear();
+        }
+
+        if (isEmpty()) {
+            return;
+        }
 
         if (minecraft.thePlayer == null || minecraft.theWorld == null
                 || minecraft.theWorld != queuedWorld || !ExtendedMessages.isEnabled()) {
@@ -130,8 +154,8 @@ public final class MessageQueue {
         regularLines.clear();
         commandLines.clear();
         queuedWorld = null;
-        nextRegularSendAtMillis = 0L;
-        nextCommandSendAtMillis = 0L;
+        nextRegularSendAtNanos = 0L;
+        nextCommandSendAtNanos = 0L;
     }
 
     public boolean isSendingQueuedMessage() {

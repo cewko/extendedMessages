@@ -1,6 +1,7 @@
 package com.github.cewko.extendedmessages.gui.setting;
 
 import java.util.List;
+import java.util.function.BooleanSupplier;
 
 import com.github.cewko.extendedmessages.gui.GuiLayout;
 import com.github.cewko.extendedmessages.gui.control.StyledToggleButton;
@@ -9,18 +10,18 @@ import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.GuiButton;
 
 public final class ToggleSetting implements GuiSetting {
-    public interface Value {
-        boolean get();
-
-        void toggle();
-    }
-
     private final String label;
-    private final Value value;
+    private final BooleanSupplier getter;
+    private final Runnable toggler;
 
-    public ToggleSetting(String label, Value value) {
+    public ToggleSetting(
+        String label,
+        BooleanSupplier getter,
+        Runnable toggler
+    ) {
         this.label = label;
-        this.value = value;
+        this.getter = getter;
+        this.toggler = toggler;
     }
 
     @Override
@@ -44,17 +45,8 @@ public final class ToggleSetting implements GuiSetting {
             width,
             GuiLayout.CONTROL_HEIGHT,
             label,
-            new StyledToggleButton.Value() {
-                @Override
-                public boolean get() {
-                    return value.get();
-                }
-
-                @Override
-                public void toggle() {
-                    value.toggle();
-                }
-            }
+            getter,
+            toggler
         ));
     }
 }

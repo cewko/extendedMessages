@@ -1,6 +1,8 @@
 package com.github.cewko.extendedmessages.gui.setting;
 
 import java.util.List;
+import java.util.function.IntConsumer;
+import java.util.function.IntSupplier;
 
 import com.github.cewko.extendedmessages.gui.GuiLayout;
 import com.github.cewko.extendedmessages.gui.control.StyledIntegerSlider;
@@ -9,22 +11,24 @@ import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.GuiButton;
 
 public final class SliderSetting implements GuiSetting {
-    public interface Value {
-        int get();
-
-        void set(int value);
-    }
-
     private final String label;
     private final int min;
     private final int max;
-    private final Value value;
+    private final IntSupplier getter;
+    private final IntConsumer setter;
 
-    public SliderSetting(String label, int min, int max, Value value) {
+    public SliderSetting(
+        String label,
+        int min,
+        int max,
+        IntSupplier getter,
+        IntConsumer setter
+    ) {
         this.label = label;
         this.min = min;
         this.max = max;
-        this.value = value;
+        this.getter = getter;
+        this.setter = setter;
     }
 
     @Override
@@ -50,17 +54,8 @@ public final class SliderSetting implements GuiSetting {
             label,
             min,
             max,
-            new StyledIntegerSlider.Value() {
-                @Override
-                public int get() {
-                    return value.get();
-                }
-
-                @Override
-                public void set(int newValue) {
-                    value.set(newValue);
-                }
-            }
+            getter,
+            setter
         ));
     }
 }

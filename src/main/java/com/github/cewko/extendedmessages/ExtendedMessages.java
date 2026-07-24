@@ -22,7 +22,7 @@ import net.minecraftforge.client.ClientCommandHandler;
 )
 public class ExtendedMessages {
 
-    public static boolean enabled = Reference.DEFAULT_ENABLED;
+    private static boolean enabled = Reference.DEFAULT_ENABLED;
     private static boolean splitEnabled = Reference.DEFAULT_SPLIT_ENABLED;
     private static int messageDelaySeconds = Reference.DEFAULT_MESSAGE_DELAY_SECONDS;
     private static int commandDelaySeconds = Reference.DEFAULT_COMMAND_DELAY_SECONDS;
@@ -43,37 +43,38 @@ public class ExtendedMessages {
         return splitEnabled;
     }
 
-    public static boolean toggleSplitEnabled() {
-        splitEnabled = !splitEnabled;
-        ExtendedMessagesConfig.saveSplitEnabled(splitEnabled);
+    public static void setSplitEnabled(boolean value) {
+        if (splitEnabled == value) {
+            return;
+        }
+
+        splitEnabled = value;
+        ExtendedMessagesConfig.saveSplitEnabled(value);
 
         MessageQueue.getInstance().clear();
+    }
 
+    public static boolean toggleSplitEnabled() {
+        setSplitEnabled(!splitEnabled);
         return splitEnabled;
     }
 
-    public static boolean toggleEnabled() {
-        enabled = !enabled;
-        ExtendedMessagesConfig.saveEnabled(enabled);
+    public static void setEnabled(boolean value) {
+        if (enabled == value) {
+            return;
+        }
+
+        enabled = value;
+        ExtendedMessagesConfig.saveEnabled(value);
 
         if (!enabled) {
             MessageQueue.getInstance().clear();
         }
-
-        return enabled;
     }
 
-    private static void validateDelaySeconds(int seconds) {
-        if (seconds < Reference.MIN_DELAY_SECONDS
-                || seconds > Reference.MAX_DELAY_SECONDS) {
-            throw new IllegalArgumentException(
-                "Delay must be between "
-                    + Reference.MIN_DELAY_SECONDS
-                    + " and "
-                    + Reference.MAX_DELAY_SECONDS
-                    + " secs"
-            );
-        }
+    public static boolean toggleEnabled() {
+        setEnabled(!enabled);
+        return enabled;
     }
 
     public static int getMessageDelaySeconds() {
@@ -81,10 +82,12 @@ public class ExtendedMessages {
     }
 
     public static void setMessageDelaySeconds(int seconds) {
-        validateDelaySeconds(seconds);
+        SettingsValidation.validateDelaySeconds(seconds);
 
-        messageDelaySeconds = seconds;
-        ExtendedMessagesConfig.saveMessageDelaySeconds(seconds);
+        if (messageDelaySeconds != seconds) {
+            messageDelaySeconds = seconds;
+            ExtendedMessagesConfig.saveMessageDelaySeconds(seconds);
+        }
     }
 
     public static int getCommandDelaySeconds() {
@@ -92,9 +95,12 @@ public class ExtendedMessages {
     }
 
     public static void setCommandDelaySeconds(int seconds) {
-        validateDelaySeconds(seconds);
-        commandDelaySeconds = seconds;
-        ExtendedMessagesConfig.saveCommandDelaySeconds(seconds);
+        SettingsValidation.validateDelaySeconds(seconds);
+
+        if (commandDelaySeconds != seconds) {
+            commandDelaySeconds = seconds;
+            ExtendedMessagesConfig.saveCommandDelaySeconds(seconds);
+        }
     }
 
     public static boolean isMessagePrefixEnabled() {
@@ -113,74 +119,49 @@ public class ExtendedMessages {
         return commandPrefix;
     }
 
+    public static void setMessagePrefixEnabled(boolean value) {
+        if (messagePrefixEnabled == value) {
+            return;
+        }
+
+        messagePrefixEnabled = value;
+        ExtendedMessagesConfig.saveMessagePrefixEnabled(value);
+    }
+
     public static boolean toggleMessagePrefixEnabled() {
-        messagePrefixEnabled = !messagePrefixEnabled;
-        ExtendedMessagesConfig.saveMessagePrefixEnabled(messagePrefixEnabled);
+        setMessagePrefixEnabled(!messagePrefixEnabled);
         return messagePrefixEnabled;
     }
 
-    public static String normalizeMessagePrefix(String prefix) {
-        if (prefix == null) {
-            throw new IllegalArgumentException("Message prefix cannot be null");
+    public static void setMessagePrefix(String prefix) {
+        String normalized = SettingsValidation.normalizeMessagePrefix(prefix);
+
+        if (!messagePrefix.equals(normalized)) {
+            messagePrefix = normalized;
+            ExtendedMessagesConfig.saveMessagePrefix(normalized);
         }
-
-        prefix = prefix.trim();
-
-        if (prefix.isEmpty()) {
-            throw new IllegalArgumentException("Message prefix is required");
-        }
-
-        validatePrefix(prefix, "Message prefix");
-        return prefix;
     }
 
-    public static void setMessagePrefix(String prefix) {
-        messagePrefix  = normalizeMessagePrefix(prefix);
-        ExtendedMessagesConfig.saveMessagePrefix(messagePrefix);
+    public static void setCommandPrefixEnabled(boolean value) {
+        if (commandPrefixEnabled == value) {
+            return;
+        }
+
+        commandPrefixEnabled = value;
+        ExtendedMessagesConfig.saveCommandPrefixEnabled(value);
     }
 
     public static boolean toggleCommandPrefixEnabled() {
-        commandPrefixEnabled = !commandPrefixEnabled;
-        ExtendedMessagesConfig.saveCommandPrefixEnabled(commandPrefixEnabled);
+        setCommandPrefixEnabled(!commandPrefixEnabled);
         return commandPrefixEnabled;
     }
 
     public static void setCommandPrefix(String prefix) {
-        commandPrefix = normalizeCommandPrefix(prefix);
-        ExtendedMessagesConfig.saveCommandPrefix(commandPrefix);
-    }
+        String normalized = SettingsValidation.normalizeCommandPrefix(prefix);
 
-    public static String normalizeCommandPrefix(String prefix) {
-        if (prefix == null) {
-            throw new IllegalArgumentException("Command prefix cannot be null");
-        }
-
-        prefix = prefix.trim();
-
-        if (prefix.isEmpty()) {
-            throw new IllegalArgumentException("Command prefix is required");
-        }
-
-        if (!prefix.startsWith("/")) {
-            prefix = "/" + prefix;
-        }
-
-        validatePrefix(prefix, "Command prefix");
-        return prefix;
-    }
-
-    private static void validatePrefix(String prefix, String displayName) {
-        if (prefix == null) {
-            throw new IllegalArgumentException(displayName + " cannot be null");
-        }
-
-        if (prefix.indexOf("\n") >= 0 || prefix.indexOf("\r") >= 0) {
-            throw new IllegalArgumentException(displayName + " cannot contain new lines");
-        }
-
-        if (prefix.length() > Reference.MAX_PREFIX_LENGTH ) {
-            throw new IllegalArgumentException(
-                displayName + " must be at most " + Reference.MAX_PREFIX_LENGTH + " characters");
+        if (!commandPrefix.equals(normalized)) {
+            commandPrefix = normalized;
+            ExtendedMessagesConfig.saveCommandPrefix(normalized);
         }
     }
 
@@ -205,31 +186,21 @@ public class ExtendedMessages {
     }
 
     public static void setMessageHistoryLength(int length) {
-        validateHistoryLength(length);
-        messageHistoryLength = length;
-        ExtendedMessagesConfig.saveMessageHistoryLength(length);
+        SettingsValidation.validateHistoryLength(length);
+
+        if (messageHistoryLength != length) {
+            messageHistoryLength = length;
+            ExtendedMessagesConfig.saveMessageHistoryLength(length);
+        }
     }
 
     public static int getCurrentMessageHistoryLength() {
         return enabled ? messageHistoryLength : Reference.VANILLA_MESSAGE_HISTORY_LENGTH;
     }
 
-    private static void validateHistoryLength(int length) {
-        if (length < Reference.MIN_MESSAGE_HISTORY_LENGTH
-                || length > Reference.MAX_MESSAGE_HISTORY_LENGTH) {
-            throw new IllegalArgumentException(
-                "history length must be between "
-                    + Reference.MIN_MESSAGE_HISTORY_LENGTH
-                    + " and "
-                    + Reference.MAX_MESSAGE_HISTORY_LENGTH
-                    + " lines"
-            );
-        }
-    }
-
     private static String loadMessagePrefix() {
         try {
-            return normalizeMessagePrefix(
+            return SettingsValidation.normalizeMessagePrefix(
                 ExtendedMessagesConfig.getMessagePrefix()
             );
         } catch (IllegalArgumentException exception) {
@@ -239,7 +210,7 @@ public class ExtendedMessages {
 
     private static String loadCommandPrefix() {
         try {
-            return normalizeCommandPrefix(
+            return SettingsValidation.normalizeCommandPrefix(
                 ExtendedMessagesConfig.getCommandPrefix()
             );
         } catch (IllegalArgumentException exception) {

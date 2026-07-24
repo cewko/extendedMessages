@@ -41,6 +41,10 @@ public final class ExtendedMessagesConfig {
         // prevent creating instances
     }
 
+    private static int clamp(int value, int min, int max) {
+        return Math.max(min, Math.min(max, value));
+    }
+
     public static void load(File file) {
         configuration = new Configuration(file);
         configuration.load();
@@ -129,9 +133,10 @@ public final class ExtendedMessagesConfig {
         int value = messageDelayProperty.getInt(
             Reference.DEFAULT_MESSAGE_DELAY_SECONDS
         );
-        return Math.max(
+        return clamp(
+            value,
             Reference.MIN_DELAY_SECONDS,
-            Math.min(Reference.MAX_DELAY_SECONDS, value)
+            Reference.MAX_DELAY_SECONDS
         );
     }
 
@@ -141,9 +146,10 @@ public final class ExtendedMessagesConfig {
         int value = commandDelayProperty.getInt(
             Reference.DEFAULT_COMMAND_DELAY_SECONDS
         );
-        return Math.max(
+        return clamp(
+            value,
             Reference.MIN_DELAY_SECONDS,
-            Math.min(Reference.MAX_DELAY_SECONDS, value)
+            Reference.MAX_DELAY_SECONDS
         );
     }
 
@@ -178,13 +184,14 @@ public final class ExtendedMessagesConfig {
             Reference.DEFAULT_MESSAGE_HISTORY_LENGTH
         );
 
-        return Math.max(
+        return clamp(
+            value,
             Reference.MIN_MESSAGE_HISTORY_LENGTH,
-            Math.min(Reference.MAX_MESSAGE_HISTORY_LENGTH, value)
+            Reference.MAX_MESSAGE_HISTORY_LENGTH
         );
     }
 
-    public static void ensureLoaded() {
+    private static void ensureLoaded() {
         if (configuration == null) {
             throw new IllegalStateException(
                 Reference.NAME + " config has not been loaded"
@@ -193,60 +200,60 @@ public final class ExtendedMessagesConfig {
     }
 
     public static void saveEnabled(boolean enabled) {
-        ensureLoaded();
-        enabledProperty.set(enabled);
-        saveIfChanged();
+        save(enabledProperty, enabled);
     }
 
     public static void saveSplitEnabled(boolean enabled) {
-        ensureLoaded();
-        splitEnabledProperty.set(enabled);
-        saveIfChanged();
+        save(splitEnabledProperty, enabled);
     }
 
     public static void saveMessageDelaySeconds(int seconds) {
-        ensureLoaded();
-        messageDelayProperty.set(seconds);
-        saveIfChanged();
+        save(messageDelayProperty, seconds);
     }
 
     public static void saveCommandDelaySeconds(int seconds) {
-        ensureLoaded();
-        commandDelayProperty.set(seconds);
-        saveIfChanged();
+        save(commandDelayProperty, seconds);
     }
 
     public static void saveMessagePrefixEnabled(boolean enabled) {
-        ensureLoaded();
-        messagePrefixEnabledProperty.set(enabled);
-        saveIfChanged();
+        save(messagePrefixEnabledProperty, enabled);
     }
 
     public static void saveMessagePrefix(String prefix) {
-        ensureLoaded();
-        messagePrefixProperty.set(prefix);
-        saveIfChanged();
+        save(messagePrefixProperty, prefix);
     }
 
     public static void saveCommandPrefixEnabled(boolean enabled) {
-        ensureLoaded();
-        commandPrefixEnabledProperty.set(enabled);
-        saveIfChanged();
+        save(commandPrefixEnabledProperty, enabled);
     }
 
     public static void saveCommandPrefix(String prefix) {
-        ensureLoaded();
-        commandPrefixProperty.set(prefix);
-        saveIfChanged();
+        save(commandPrefixProperty, prefix);
     }
 
     public static void saveMessageHistoryLength(int length) {
+        save(messageHistoryLengthProperty, length);
+    }
+
+    private static void save(Property property, boolean value) {
         ensureLoaded();
-        messageHistoryLengthProperty.set(length);
+        property.set(value);
         saveIfChanged();
     }
 
-    public static void saveIfChanged() {
+    private static void save(Property property, int value) {
+        ensureLoaded();
+        property.set(value);
+        saveIfChanged();
+    }
+
+    private static void save(Property property, String value) {
+        ensureLoaded();
+        property.set(value);
+        saveIfChanged();
+    }
+
+    private static void saveIfChanged() {
         if (configuration.hasChanged()) {
             configuration.save();
         }
