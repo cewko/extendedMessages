@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.github.cewko.extendedmessages.ExtendedMessages;
 import com.github.cewko.extendedmessages.Reference;
 import com.github.cewko.extendedmessages.gui.setting.GuiSetting;
 import com.github.cewko.extendedmessages.gui.setting.IntegerSetting;
@@ -22,9 +21,15 @@ public final class ExtendedMessagesGui extends GuiScreen {
     private final List<GuiSetting> regularSettings = new ArrayList<GuiSetting>();
     private final List<GuiSetting> commandSettings = new ArrayList<GuiSetting>();
 
+    private final SettingsDraft draft;
+
     private GuiSetting mainSetting;
 
     private int nextControlId;
+
+    public ExtendedMessagesGui() {
+        draft = SettingsDraft.fromCurrentSettings();
+    }
 
     @Override
     public void initGui() {
@@ -81,12 +86,12 @@ public final class ExtendedMessagesGui extends GuiScreen {
             new ToggleSetting.Value() {
                 @Override
                 public boolean get() {
-                    return ExtendedMessages.isEnabled();
+                    return draft.isEnabled();
                 }
 
                 @Override
                 public void toggle() {
-                    ExtendedMessages.toggleEnabled();
+                    draft.toggleEnabled();
                 }
             }
         );
@@ -100,12 +105,12 @@ public final class ExtendedMessagesGui extends GuiScreen {
             new ToggleSetting.Value() {
                 @Override
                 public boolean get() {
-                    return ExtendedMessages.isSplitEnabled();
+                    return draft.isSplitEnabled();
                 }
 
                 @Override
                 public void toggle() {
-                    ExtendedMessages.toggleSplitEnabled();
+                    draft.toggleSplitEnabled();
                 }
             }
         ));
@@ -118,12 +123,12 @@ public final class ExtendedMessagesGui extends GuiScreen {
                 new SliderSetting.Value() {
                     @Override
                     public int get() {
-                        return ExtendedMessages.getMessageDelaySeconds();
+                        return draft.getMessageDelaySeconds();
                     }
 
                     @Override
                     public void set(int value) {
-                        ExtendedMessages.setMessageDelaySeconds(value);
+                        draft.setMessageDelaySeconds(value);
                     }
                 }
             )
@@ -134,12 +139,12 @@ public final class ExtendedMessagesGui extends GuiScreen {
             new ToggleSetting.Value() {
                 @Override
                 public boolean get() {
-                    return ExtendedMessages.isMessagePrefixEnabled();
+                    return draft.isMessagePrefixEnabled();
                 }
 
                 @Override
                 public void toggle() {
-                    ExtendedMessages.toggleMessagePrefixEnabled();
+                    draft.toggleMessagePrefixEnabled();
                 }
             }
         ));
@@ -151,12 +156,12 @@ public final class ExtendedMessagesGui extends GuiScreen {
                 new TextSetting.Value() {
                     @Override
                     public String get() {
-                        return ExtendedMessages.getMessagePrefix();
+                        return draft.getMessagePrefix();
                     }
 
                     @Override
                     public void set(String value) {
-                        ExtendedMessages.setMessagePrefix(value);
+                        draft.setMessagePrefix(value);
                     }
                 }
             )
@@ -170,12 +175,12 @@ public final class ExtendedMessagesGui extends GuiScreen {
                 new IntegerSetting.Value() {
                     @Override
                     public int get() {
-                        return ExtendedMessages.getMessageHistoryLength();
+                        return draft.getMessageHistoryLength();
                     }
 
                     @Override
                     public void set(int value) {
-                        ExtendedMessages.setMessageHistoryLength(value);
+                        draft.setMessageHistoryLength(value);
                     }
                 }
             )
@@ -189,12 +194,12 @@ public final class ExtendedMessagesGui extends GuiScreen {
                 new ToggleSetting.Value() {
                     @Override
                     public boolean get() {
-                        return ExtendedMessages.isCommandPrefixEnabled();
+                        return draft.isCommandPrefixEnabled();
                     }
 
                     @Override
                     public void toggle() {
-                        ExtendedMessages.toggleCommandPrefixEnabled();
+                        draft.toggleCommandPrefixEnabled();
                     }
                 }
             )
@@ -208,12 +213,12 @@ public final class ExtendedMessagesGui extends GuiScreen {
                 new SliderSetting.Value() {
                     @Override
                     public int get() {
-                        return ExtendedMessages.getCommandDelaySeconds();
+                        return draft.getCommandDelaySeconds();
                     }
 
                     @Override
                     public void set(int value) {
-                        ExtendedMessages.setCommandDelaySeconds(value);
+                        draft.setCommandDelaySeconds(value);
                     }
                 }
             )
@@ -225,12 +230,12 @@ public final class ExtendedMessagesGui extends GuiScreen {
             new TextSetting.Value() {
                 @Override
                 public String get() {
-                    return ExtendedMessages.getCommandPrefix();
+                    return draft.getCommandPrefix();
                 }
 
                 @Override
                 public void set(String value) {
-                    ExtendedMessages.setCommandPrefix(value);
+                    draft.setCommandPrefix(value);
                 }
             }
         ));
@@ -248,12 +253,16 @@ public final class ExtendedMessagesGui extends GuiScreen {
 
     @Override
     protected void actionPerformed(GuiButton button) throws IOException {
-        if (button.id == DONE_BUTTON_ID) {
-            mc.displayGuiScreen(null);
+        if (button.id != DONE_BUTTON_ID) {
             return;
         }
 
-        validateSettings();
+        if (!validateSettings()) {
+            return;
+        }
+
+        draft.apply();
+        mc.displayGuiScreen(null);
     }
 
     @Override
@@ -274,10 +283,16 @@ public final class ExtendedMessagesGui extends GuiScreen {
         super.keyTyped(typedChar, keyCode);
     }
 
-    private void validateSettings() {
+    private boolean validateSettings() {
+        boolean valid = true;
+
         for (GuiSetting setting : settings) {
-            setting.validate();
+            if (!setting.validate()) {
+                valid = false;
+            }
         }
+
+        return valid;
     }
 
     @Override

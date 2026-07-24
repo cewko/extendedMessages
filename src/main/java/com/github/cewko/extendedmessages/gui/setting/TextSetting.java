@@ -93,17 +93,19 @@ public final class TextSetting implements GuiSetting {
         textField.updateCursorCounter();
     }
 
-    private void saveIfValid() {
+    private boolean saveIfValid() {
         try {
             value.set(textField.getText());
             error = null;
+            return true;
         } catch (IllegalArgumentException exception) {
             error = GuiValidationError.fromException(exception);
+            return false;
         }
     }
 
     @Override
-    public void validate() {
-        saveIfValid();
+    public boolean validate() {
+        return saveIfValid();
     }
 }

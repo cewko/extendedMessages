@@ -96,12 +96,12 @@ public final class IntegerSetting implements GuiSetting {
         textField.updateCursorCounter();
     }
 
-    private void saveIfValid() {
+    private boolean saveIfValid() {
         String text = textField.getText().trim();
 
         if (text.isEmpty()) {
             error = GuiValidationError.REQUIRED;
-            return;
+            return false;
         }
 
         try {
@@ -109,15 +109,23 @@ public final class IntegerSetting implements GuiSetting {
 
             if (parsed < min || parsed > max) {
                 error = GuiValidationError.OUT_OF_RANGE;
-                return;
+                return false;
             }
 
             value.set(parsed);
             error = null;
+            return true;
         } catch (NumberFormatException exception) {
             error = GuiValidationError.NUMBERS_ONLY;
+            return false;
         } catch (IllegalArgumentException exception) {
             error = GuiValidationError.fromException(exception);
+            return false;
         }
+    }
+
+    @Override
+    public boolean validate() {
+        return saveIfValid();
     }
 }

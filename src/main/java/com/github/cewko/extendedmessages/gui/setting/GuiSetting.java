@@ -31,6 +31,7 @@ public interface GuiSetting {
     default void update() {
     }
 
-    default void validate() {
+    default boolean validate() {
+        return true;
     }
 }

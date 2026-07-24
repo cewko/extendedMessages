@@ -119,7 +119,7 @@ public class ExtendedMessages {
         return messagePrefixEnabled;
     }
 
-    private static String normalizeMessagePrefix(String prefix) {
+    public static String normalizeMessagePrefix(String prefix) {
         if (prefix == null) {
             throw new IllegalArgumentException("Message prefix cannot be null");
         }
@@ -150,7 +150,7 @@ public class ExtendedMessages {
         ExtendedMessagesConfig.saveCommandPrefix(commandPrefix);
     }
 
-    private static String normalizeCommandPrefix(String prefix) {
+    public static String normalizeCommandPrefix(String prefix) {
         if (prefix == null) {
             throw new IllegalArgumentException("Command prefix cannot be null");
         }
