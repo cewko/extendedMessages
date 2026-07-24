@@ -1,4 +1,4 @@
-package com.github.cewko.extendedmessages.init;
+package com.github.cewko.enhanmess.init;
 
 import org.spongepowered.asm.lib.tree.ClassNode;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;

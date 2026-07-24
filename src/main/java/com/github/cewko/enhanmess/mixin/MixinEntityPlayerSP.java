@@ -1,8 +1,8 @@
-package com.github.cewko.extendedmessages.mixin;
+package com.github.cewko.enhanmess.mixin;
 
-import com.github.cewko.extendedmessages.ExtendedMessages;
-import com.github.cewko.extendedmessages.messaging.OutgoingMessageProcessor;
-import com.github.cewko.extendedmessages.messaging.MessageQueue;
+import com.github.cewko.enhanmess.EnhanMess;
+import com.github.cewko.enhanmess.messaging.OutgoingMessageProcessor;
+import com.github.cewko.enhanmess.messaging.MessageQueue;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityPlayerSP;
@@ -21,7 +21,7 @@ public abstract class MixinEntityPlayerSP {
         cancellable = true,
         require = 1
     )
-    private void extendedmessages$interceptMessage(
+    private void enhanmess$interceptMessage(
         String message,
         CallbackInfo callback
     ) {
@@ -31,7 +31,7 @@ public abstract class MixinEntityPlayerSP {
             return;
         }
 
-        if (!ExtendedMessages.isEnabled()) {
+        if (!EnhanMess.isEnabled()) {
             return;
         }
 

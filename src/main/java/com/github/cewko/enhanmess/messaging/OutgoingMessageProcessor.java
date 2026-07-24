@@ -1,7 +1,7 @@
-package com.github.cewko.extendedmessages.messaging;
+package com.github.cewko.enhanmess.messaging;
 
-import com.github.cewko.extendedmessages.ExtendedMessages;
-import com.github.cewko.extendedmessages.Reference;
+import com.github.cewko.enhanmess.EnhanMess;
+import com.github.cewko.enhanmess.Reference;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -13,7 +13,16 @@ import net.minecraft.util.EnumChatFormatting;
 
 public final class OutgoingMessageProcessor {
     private OutgoingMessageProcessor() {
+    }
 
+    private static final class ProcessedMessage {
+        private final List<String> lines;
+        private final MessageQueue.Lane lane;
+
+        private ProcessedMessage(List<String> lines, MessageQueue.Lane lane) {
+            this.lines = lines;
+            this.lane = lane;
+        }
     }
 
     public static boolean shouldBypass(String message) {
@@ -33,7 +42,7 @@ public final class OutgoingMessageProcessor {
             return false;
         }
 
-        return message.length() <= ExtendedMessages.getCurrentPacketMessageLimit();
+        return message.length() <= EnhanMess.getCurrentPacketMessageLimit();
     }
 
     private static boolean startsWithCommand(String message, String command) {
@@ -43,11 +52,11 @@ public final class OutgoingMessageProcessor {
     }
 
     private static boolean isConfiguredCommandMessage(String message) {
-        if (!ExtendedMessages.isCommandPrefixEnabled()) {
+        if (!EnhanMess.isCommandPrefixEnabled()) {
             return false;
         }
 
-        String commandPrefix = withTrailingSpace(ExtendedMessages.getCommandPrefix());
+        String commandPrefix = withTrailingSpace(EnhanMess.getCommandPrefix());
 
         return !commandPrefix.isEmpty()
             && message.regionMatches(true, 0, commandPrefix, 0, commandPrefix.length())
@@ -60,30 +69,53 @@ public final class OutgoingMessageProcessor {
     }
 
     public static void handle(Minecraft minecraft, String message) {
-        List<String> lines = buildLines(minecraft, message);
+        ProcessedMessage processed = process(minecraft, message);
 
-        if (!lines.isEmpty()) {
-            MessageQueue.getInstance().enqueueLines(lines);
+        if (processed.lines.isEmpty()) {
+            return;
         }
+
+        MessageQueue.getInstance().enqueueLines(processed.lines, processed.lane);
     }
 
-    private static List<String> buildLines(Minecraft minecraft, String message) {
+    private static ProcessedMessage process(Minecraft minecraft, String message) {
         if (isConfiguredCommandMessage(message)) {
-            String commandPrefix = withTrailingSpace(ExtendedMessages.getCommandPrefix());
-            String body = message.substring((commandPrefix.length()));
-            return buildSendableLines(minecraft, commandPrefix, body);
+            return processConfiguredCommand(minecraft, message);
         }
 
         if (message.startsWith("/")) {
             warn(minecraft, "long commands cannot be split safely");
-            return Collections.emptyList();
+            return new ProcessedMessage(
+                Collections.<String>emptyList(),
+                MessageQueue.Lane.REGULAR
+            );
         }
 
-        String messagePrefix = ExtendedMessages.isMessagePrefixEnabled()
-            ? withTrailingSpace(ExtendedMessages.getMessagePrefix())
+        return processRegularMessage(minecraft, message);
+    }
+
+    private static ProcessedMessage processRegularMessage(Minecraft minecraft, String message) {
+        String messagePrefix = EnhanMess.isMessagePrefixEnabled()
+            ? withTrailingSpace(EnhanMess.getMessagePrefix())
             : "";
 
-        return buildSendableLines(minecraft, messagePrefix, message);
+        return new ProcessedMessage(
+            buildSendableLines(minecraft, messagePrefix, message),
+            MessageQueue.Lane.REGULAR
+        );
+    }
+
+    private static ProcessedMessage processConfiguredCommand(
+        Minecraft minecraft,
+        String message
+    ) {
+        String commandPrefix = withTrailingSpace(EnhanMess.getCommandPrefix());
+        String body = message.substring(commandPrefix.length());
+
+        return new ProcessedMessage(
+            buildSendableLines(minecraft, commandPrefix, body),
+            MessageQueue.Lane.CONFIGURED_COMMAND
+        );
     }
 
     private static void warn(Minecraft minecraft, String message) {
@@ -101,7 +133,7 @@ public final class OutgoingMessageProcessor {
         String prefix,
         String body
     ) {
-        if (!ExtendedMessages.isSplitEnabled()) {
+        if (!EnhanMess.isSplitEnabled()) {
             String line = prefix + body;
 
             if (line.length() > Reference.EXTENDED_MESSAGE_LIMIT) {
@@ -110,7 +142,7 @@ public final class OutgoingMessageProcessor {
                     + " chars"
                 );
                 return Collections.emptyList();
-            } 
+            }
 
             return Collections.singletonList(line);
         }
@@ -139,6 +171,4 @@ public final class OutgoingMessageProcessor {
 
         return lines;
     }
-
-
 }
