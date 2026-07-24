@@ -193,7 +193,7 @@ public class ExtendedMessages {
 
         if (prefix.length() > Reference.MAX_PREFIX_LENGTH ) {
             throw new IllegalArgumentException(
-                displayName + " must be at most  " + Reference.MAX_PREFIX_LENGTH + " characters");
+                displayName + " must be at most " + Reference.MAX_PREFIX_LENGTH + " characters");
         }
     }
 

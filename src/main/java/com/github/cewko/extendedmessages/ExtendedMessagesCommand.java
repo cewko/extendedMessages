@@ -13,6 +13,46 @@ import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.EnumChatFormatting;
 
 public final class ExtendedMessagesCommand extends CommandBase {
+    private interface BooleanToggle {
+        boolean toggle();
+    }
+
+    private interface StringSetter {
+        String set(String value);
+    }
+
+    private interface IntSetter {
+        void set(int value);
+    }
+
+    private interface IntFormatter {
+        String format(int value);
+    }
+
+    private void handleIntSet(
+        ICommandSender sender,
+        String[] args,
+        String usage,
+        String displayName,
+        int min,
+        int max,
+        IntSetter setter,
+        IntFormatter formatter
+    ) throws CommandException {
+        if (args.length != 3 || !"set".equalsIgnoreCase(args[1])) {
+            throw new WrongUsageException(usage);
+        }
+
+        int value = parseInt(args[2], min, max);
+
+        try {
+            setter.set(value);
+        } catch (IllegalArgumentException exception) {
+            throw new CommandException(exception.getMessage());
+        }
+
+        sendLine(sender, displayName + ": " + formatter.format(value));
+    }
 
     @Override
     public String getCommandName() {
@@ -26,15 +66,11 @@ public final class ExtendedMessagesCommand extends CommandBase {
 
     @Override
     public String getCommandUsage(ICommandSender sender) {
-        return "/em [gui|toggle|split|delay <"
-            + Reference.MIN_DELAY_SECONDS
-            + "-"
-            + Reference.MAX_DELAY_SECONDS
-            + ">|history <"
-            + Reference.MIN_MESSAGE_HISTORY_LENGTH
-            + "-"
-            + Reference.MAX_MESSAGE_HISTORY_LENGTH
-            + ">|prefix <toggle|set|remove>|command <toggle|set <command>|delay <seconds>>]";
+        return "/em | /em toggle | /em mp <toggle|set <prefix>>"
+            + " | /em cp <toggle|set <command>>"
+            + " | /em mc set <seconds>"
+            + " | /em cc set <seconds>"
+            + " | /em h set <lines>";
     }
 
     @Override
@@ -43,190 +79,198 @@ public final class ExtendedMessagesCommand extends CommandBase {
     }
 
     @Override
-    public void processCommand(ICommandSender sender, String[] args) 
+    public void processCommand(ICommandSender sender, String[] args)
         throws CommandException {
-            
-        if (args.length == 0) {
-            showStatus(sender);
-            return;
-        }
 
-        if (args.length == 1 && "gui".equalsIgnoreCase(args[0])) {
+        if (args.length == 0) {
             GuiOpener.getInstance().requestOpen();
             return;
         }
 
-        if (args.length == 1 && "toggle".equalsIgnoreCase(args[0])) {
-            boolean enabled = ExtendedMessages.toggleEnabled();
-            sendLine(sender, "Remove 100-character limit: " + formatState(enabled));
+        switch (args[0].toLowerCase()) {
+            case "toggle":
+                handleMainToggle(sender, args);
+                return;
+            case "mp":
+                handlePrefixSetting(
+                    sender,
+                    args,
+                    "/em mp <toggle|set <prefix>>",
+                    "Message prefix",
+                    new BooleanToggle() {
+                        @Override
+                        public boolean toggle() {
+                            return ExtendedMessages.toggleMessagePrefixEnabled();
+                        }
+                    },
+                    new StringSetter() {
+                        @Override
+                        public String set(String value) {
+                            ExtendedMessages.setMessagePrefix(value);
+                            return ExtendedMessages.getMessagePrefix();
+                        }
+                    }
+                );
+                return;
+            case "cp":
+                handlePrefixSetting(
+                    sender,
+                    args,
+                    "/em cp <toggle|set <command>>",
+                    "Command prefix",
+                    new BooleanToggle() {
+                        @Override
+                        public boolean toggle() {
+                            return ExtendedMessages.toggleCommandPrefixEnabled();
+                        }
+                    },
+                    new StringSetter() {
+                        @Override
+                        public String set(String value) {
+                            ExtendedMessages.setCommandPrefix(value);
+                            return ExtendedMessages.getCommandPrefix();
+                        }
+                    }
+                );
+                return;
+            case "mc":
+                handleIntSet(
+                    sender,
+                    args,
+                    "/em mc set <seconds>",
+                    "Message cooldown",
+                    Reference.MIN_DELAY_SECONDS,
+                    Reference.MAX_DELAY_SECONDS,
+                    new IntSetter() {
+                        @Override
+                        public void set(int value) {
+                            ExtendedMessages.setMessageDelaySeconds(value);
+                        }
+                    },
+                    new IntFormatter() {
+                        @Override
+                        public String format(int value) {
+                            return EnumChatFormatting.AQUA + formatSeconds(value);
+                        }
+                    }
+                );
+                return;
+            case "cc":
+                handleIntSet(
+                    sender,
+                    args,
+                    "/em cc set <seconds>",
+                    "Command cooldown",
+                    Reference.MIN_DELAY_SECONDS,
+                    Reference.MAX_DELAY_SECONDS,
+                    new IntSetter() {
+                        @Override
+                        public void set(int value) {
+                            ExtendedMessages.setCommandDelaySeconds(value);
+                        }
+                    },
+                    new IntFormatter() {
+                        @Override
+                        public String format(int value) {
+                            return EnumChatFormatting.AQUA + formatSeconds(value);
+                        }
+                    }
+                );
+                return;
+            case "h":
+                handleIntSet(
+                    sender,
+                    args,
+                    "/em h set <lines>",
+                    "History length",
+                    Reference.MIN_MESSAGE_HISTORY_LENGTH,
+                    Reference.MAX_MESSAGE_HISTORY_LENGTH,
+                    new IntSetter() {
+                        @Override
+                        public void set(int value) {
+                            ExtendedMessages.setMessageHistoryLength(value);
+                        }
+                    },
+                    new IntFormatter() {
+                        @Override
+                        public String format(int value) {
+                            return EnumChatFormatting.AQUA
+                                + String.valueOf(value)
+                                + EnumChatFormatting.GRAY
+                                + " lines";
+                        }
+                    }
+                );
+                return;
 
-            return;
+            default:
+                throw new WrongUsageException(getCommandUsage(sender));
         }
-
-        if (args.length == 1 && "split".equalsIgnoreCase(args[0])) {
-            boolean enabled = ExtendedMessages.toggleSplitEnabled();
-
-            sendLine(sender, "Split long messages: " + formatState(enabled)
-                + formatSplitRisk(enabled)
-            );
-
-            return;
-        }
-
-        if (args.length == 2 && "delay".equalsIgnoreCase(args[0])) {
-
-            int seconds = parseInt(
-                args[1],
-                Reference.MIN_DELAY_SECONDS,
-                Reference.MAX_DELAY_SECONDS
-            );
-
-            ExtendedMessages.setMessageDelaySeconds(seconds);
-
-            sendLine(
-                sender,
-                "Message delay: "
-                    + EnumChatFormatting.AQUA
-                    + formatSeconds(seconds)
-            );
-
-            return;
-        }
-
-        if (args.length == 2 && "history".equalsIgnoreCase(args[0])) {
-            int length = parseInt(
-                args[1],
-                Reference.MIN_MESSAGE_HISTORY_LENGTH,
-                Reference.MAX_MESSAGE_HISTORY_LENGTH
-            );
-
-            ExtendedMessages.setMessageHistoryLength(length);
-
-            sendLine(
-                sender,
-                "message history length: "
-                + EnumChatFormatting.AQUA
-                + length
-                + EnumChatFormatting.GRAY
-                + " lines"
-            );
-
-            return;
-        }
-
-        if ("prefix".equalsIgnoreCase(args[0])) {
-            handlePrefixCommand(sender, args);
-            return;
-        }
-
-        if ("command".equalsIgnoreCase(args[0])) {
-            handleCommandSettings(sender, args);
-            return;
-        }
-
-        throw new WrongUsageException(getCommandUsage(sender));
     }
 
-    private void handlePrefixCommand(
-        ICommandSender sender, String[] args) throws CommandException {
+    private void handleMainToggle(ICommandSender sender, String[] args)
+        throws CommandException {
 
-            if (args.length == 1) {
-                showPrefixStatus(sender);
-                return;
-            }
-
-            if (args.length == 2 && "toggle".equalsIgnoreCase(args[1])) {
-                boolean enabled = ExtendedMessages.toggleMessagePrefixEnabled();
-
-                sendLine(sender, "Message prefix: " + formatState(enabled));
-
-                return;
-            }
-
-            if (args.length == 2 && "remove".equalsIgnoreCase(args[1])) {
-                ExtendedMessages.setMessagePrefix("");
-                sendLine(sender, "Message prefix removed");
-                return;
-            }
-
-            if (args.length >= 3 && "set".equalsIgnoreCase(args[1])) {
-                String prefix = joinArgs(args, 2);
-
-                try {
-                    ExtendedMessages.setMessagePrefix(prefix);
-                } catch (IllegalArgumentException exception) {
-                    throw new CommandException(
-                        exception.getMessage()
-                    );
-                }
-
-                sendLine(sender, 
-                    "Message prefix set to " + formatValue(ExtendedMessages.getMessagePrefix())
-                );
-
-                return;
-            }
-
-            throw new WrongUsageException(
-                "/em prefix [toggle|set <text>|remove]"
-            );
+        if (args.length != 1) {
+            throw new WrongUsageException("/em toggle");
         }
 
-    private void handleCommandSettings(
-        ICommandSender sender, String[] args) throws CommandException {
+        boolean enabled = ExtendedMessages.toggleEnabled();
+        sendLine(sender, "Remove 100-character limit: " + formatState(enabled));
+    }
 
-            if (args.length == 1) {
-                showConfiguredCommandStatus(sender);
-                return;
-            }
+    private void handlePrefixSetting(
+        ICommandSender sender,
+        String[] args,
+        String usage,
+        String displayName,
+        BooleanToggle toggle,
+        StringSetter setter
+    ) throws CommandException {
+        if (args.length < 2) {
+            throw new WrongUsageException(usage);
+        }
 
-            if (args.length == 2 && "toggle".equalsIgnoreCase(args[1])) {
-                boolean enabled = ExtendedMessages.toggleCommandPrefixEnabled();
-                sendLine(sender, "Configured command: " + formatState(enabled));
-                return;
-            }
-
-            if (args.length >= 3 && "set".equalsIgnoreCase(args[1])) {
-                String commandPrefix = joinArgs(args, 2);
-
-                try {
-                    ExtendedMessages.setCommandPrefix(commandPrefix);
-                } catch (IllegalArgumentException exception) {
-                    throw new CommandException(
-                        exception.getMessage()
-                    );
+        switch (args[1].toLowerCase()) {
+            case "toggle":
+                if (args.length != 2) {
+                    throw new WrongUsageException(usage);
                 }
 
-                sendLine(sender, 
-                    "Configured command set to " + formatValue(
-                        ExtendedMessages.getCommandPrefix()));
-
+                boolean enabled = toggle.toggle();
+                sendLine(sender, displayName + ": " + formatState(enabled));
                 return;
-            }
 
-            if (args.length == 3 && "delay".equalsIgnoreCase(args[1])) {
-                int seconds = parseInt(
-                    args[2],
-                    Reference.MIN_DELAY_SECONDS,
-                    Reference.MAX_DELAY_SECONDS
-                );
+            case "set":
+                if (args.length < 3) {
+                    throw new WrongUsageException(usage);
+                }
 
-                ExtendedMessages.setCommandDelaySeconds(seconds);
-
-                sendLine(
-                    sender,
-                    "Command delay: "
-                        + EnumChatFormatting.AQUA
-                        + formatSeconds(seconds)
-                );
-
+                handleTextSet(sender, args, displayName, setter);
                 return;
-            }
 
-            throw new WrongUsageException(
-                "/em command [toggle|set <command>|delay <seconds>]"
-            );
+            default:
+                throw new WrongUsageException(usage);
         }
+    }
+
+    private void handleTextSet(
+        ICommandSender sender,
+        String[] args,
+        String displayName,
+        StringSetter setter
+    ) throws CommandException {
+        String value = joinArgs(args, 2);
+        String storedValue;
+
+        try {
+            storedValue = setter.set(value);
+        } catch (IllegalArgumentException exception) {
+            throw new CommandException(exception.getMessage());
+        }
+
+        sendLine(sender, displayName + " set to " + formatValue(storedValue));
+    }
 
     private String joinArgs(String[] args, int startIndex) {
         StringBuilder result = new StringBuilder();
@@ -242,133 +286,6 @@ public final class ExtendedMessagesCommand extends CommandBase {
         return result.toString();
     }
 
-    private void showStatus(ICommandSender sender) {
-        sender.addChatMessage(new ChatComponentText(
-            EnumChatFormatting.AQUA
-                + "[" + Reference.NAME + "]"
-        ));
-
-        sender.addChatMessage(new ChatComponentText(
-            EnumChatFormatting.GRAY
-                + "Remove 100-character limit: "
-                + formatState(ExtendedMessages.isEnabled())
-        ));
-
-        sender.addChatMessage(new ChatComponentText(
-            EnumChatFormatting.GRAY
-                + "Split long messages: "
-                + formatState(ExtendedMessages.isSplitEnabled())
-                + formatSplitRisk(ExtendedMessages.isSplitEnabled())
-        ));
-
-        int delay = ExtendedMessages.getMessageDelaySeconds();
-        int commandDelay = ExtendedMessages.getCommandDelaySeconds();
-
-        sender.addChatMessage(new ChatComponentText(
-            EnumChatFormatting.GRAY
-                + "Message delay: "
-                + EnumChatFormatting.AQUA
-                + formatSeconds(delay)
-        ));
-
-        sender.addChatMessage(new ChatComponentText(
-            EnumChatFormatting.GRAY
-                + "Command delay: "
-                + EnumChatFormatting.AQUA
-                + formatSeconds(commandDelay)
-        ));
-
-        sender.addChatMessage(new ChatComponentText(
-            EnumChatFormatting.DARK_GRAY
-                + "/em toggle"
-        ));
-
-        sender.addChatMessage(new ChatComponentText(
-            EnumChatFormatting.DARK_GRAY
-                + "/em split"
-        ));
-
-        sender.addChatMessage(new ChatComponentText(
-            EnumChatFormatting.DARK_GRAY
-                + "/em delay <seconds>"
-        ));
-
-        sender.addChatMessage(new ChatComponentText(
-            EnumChatFormatting.DARK_GRAY
-                + "/em command delay <seconds>"
-        ));
-
-        sender.addChatMessage(new ChatComponentText(
-            EnumChatFormatting.DARK_GRAY
-                + "/em history <lines>"
-        ));
-
-        sender.addChatMessage(new ChatComponentText(
-            EnumChatFormatting.GRAY + "Message prefix: "
-                + formatState(ExtendedMessages.isMessagePrefixEnabled())
-                + EnumChatFormatting.GRAY
-                + " "
-                + formatValue(ExtendedMessages.getMessagePrefix())
-        ));
-
-        sender.addChatMessage(new ChatComponentText(
-            EnumChatFormatting.GRAY + "Configured command: "
-                + formatState(ExtendedMessages.isCommandPrefixEnabled())
-                + EnumChatFormatting.GRAY
-                + " "
-                + formatValue(ExtendedMessages.getCommandPrefix())
-        ));
-
-        sender.addChatMessage(new ChatComponentText(
-            EnumChatFormatting.GRAY
-                + "Message history length: "
-                + EnumChatFormatting.AQUA
-                + ExtendedMessages.getMessageHistoryLength()
-                + EnumChatFormatting.GRAY
-                + " lines"
-        ));
-
-        sender.addChatMessage(new ChatComponentText(
-            EnumChatFormatting.DARK_GRAY
-                + "/em gui"
-        ));
-    }
-
-    private void showPrefixStatus(ICommandSender sender) {
-        sendLine(sender, "Message prefix: "
-            + formatState(
-                ExtendedMessages.isMessagePrefixEnabled()
-            )
-        );
-
-        sendLine(sender, "Message prefix value: "
-            + formatValue(
-                ExtendedMessages.getMessagePrefix()
-            )
-        );
-    }
-
-    private void showConfiguredCommandStatus(ICommandSender sender) {
-        sendLine(sender, "Configured command: "
-            + formatState(
-                ExtendedMessages.isCommandPrefixEnabled()
-            )
-        );
-
-        sendLine(sender, "Configured command value: "
-            + formatValue(
-                ExtendedMessages.getCommandPrefix()
-            )
-        );
-
-        sendLine(sender, "Command delay: "
-            + EnumChatFormatting.AQUA
-            + formatSeconds(
-                ExtendedMessages.getCommandDelaySeconds()
-            )
-        );
-    }
-
     private void sendLine(ICommandSender sender, String message) {
         sender.addChatMessage(new ChatComponentText(
             EnumChatFormatting.GRAY
@@ -379,15 +296,6 @@ public final class ExtendedMessagesCommand extends CommandBase {
 
     private String formatState(boolean enabled) {
         return enabled ? EnumChatFormatting.GREEN + "ON" : EnumChatFormatting.RED + "OFF";
-    }
-
-    private String formatSplitRisk(boolean splitEnabled) {
-        if (splitEnabled) {
-            return "";
-        }
-
-        return EnumChatFormatting.RED
-            + " (unsafe; servers might kick you)";
     }
 
     private String formatSeconds(int seconds) {
