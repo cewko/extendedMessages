@@ -115,44 +115,42 @@ public class ExtendedMessages {
 
     public static boolean toggleMessagePrefixEnabled() {
         messagePrefixEnabled = !messagePrefixEnabled;
-
-        ExtendedMessagesConfig.saveMessagePrefixEnabled(
-            messagePrefixEnabled
-        );
-
+        ExtendedMessagesConfig.saveMessagePrefixEnabled(messagePrefixEnabled);
         return messagePrefixEnabled;
     }
 
-    public static void setMessagePrefix(String prefix) {
+    private static String normalizeMessagePrefix(String prefix) {
         if (prefix == null) {
             throw new IllegalArgumentException("Message prefix cannot be null");
         }
 
         prefix = prefix.trim();
 
-        if (prefix.isEmpty() && messagePrefixEnabled) {
+        if (prefix.isEmpty()) {
             throw new IllegalArgumentException("Message prefix is required");
         }
 
         validatePrefix(prefix, "Message prefix");
-        messagePrefix = prefix;
+        return prefix;
+    }
 
-        ExtendedMessagesConfig.saveMessagePrefix(
-            messagePrefix
-        );
+    public static void setMessagePrefix(String prefix) {
+        messagePrefix  = normalizeMessagePrefix(prefix);
+        ExtendedMessagesConfig.saveMessagePrefix(messagePrefix);
     }
 
     public static boolean toggleCommandPrefixEnabled() {
         commandPrefixEnabled = !commandPrefixEnabled;
-
-        ExtendedMessagesConfig.saveCommandPrefixEnabled(
-            commandPrefixEnabled
-        );
-
+        ExtendedMessagesConfig.saveCommandPrefixEnabled(commandPrefixEnabled);
         return commandPrefixEnabled;
     }
 
     public static void setCommandPrefix(String prefix) {
+        commandPrefix = normalizeCommandPrefix(prefix);
+        ExtendedMessagesConfig.saveCommandPrefix(commandPrefix);
+    }
+
+    private static String normalizeCommandPrefix(String prefix) {
         if (prefix == null) {
             throw new IllegalArgumentException("Command prefix cannot be null");
         }
@@ -160,13 +158,7 @@ public class ExtendedMessages {
         prefix = prefix.trim();
 
         if (prefix.isEmpty()) {
-            if (commandPrefixEnabled) {
-                throw new IllegalArgumentException("Command prefix is required");
-            }
-
-            commandPrefix = "";
-            ExtendedMessagesConfig.saveCommandPrefix(commandPrefix);
-            return;
+            throw new IllegalArgumentException("Command prefix is required");
         }
 
         if (!prefix.startsWith("/")) {
@@ -174,12 +166,7 @@ public class ExtendedMessages {
         }
 
         validatePrefix(prefix, "Command prefix");
-
-        commandPrefix = prefix;
-
-        ExtendedMessagesConfig.saveCommandPrefix(
-            commandPrefix
-        );
+        return prefix;
     }
 
     private static void validatePrefix(String prefix, String displayName) {
@@ -240,22 +227,44 @@ public class ExtendedMessages {
         }
     }
 
+    private static String loadMessagePrefix() {
+        try {
+            return normalizeMessagePrefix(
+                ExtendedMessagesConfig.getMessagePrefix()
+            );
+        } catch (IllegalArgumentException exception) {
+            return Reference.DEFAULT_MESSAGE_PREFIX;
+        }
+    }
+
+    private static String loadCommandPrefix() {
+        try {
+            return normalizeCommandPrefix(
+                ExtendedMessagesConfig.getCommandPrefix()
+            );
+        } catch (IllegalArgumentException exception) {
+            return Reference.DEFAULT_COMMAND_PREFIX;
+        }
+    }
+
     @Mod.EventHandler
     public void preInit(FMLPreInitializationEvent event) {
-        ExtendedMessagesConfig.load(
-            event.getSuggestedConfigurationFile()
-        );
+        ExtendedMessagesConfig.load(event.getSuggestedConfigurationFile());
 
         enabled = ExtendedMessagesConfig.getEnabled();
         splitEnabled = ExtendedMessagesConfig.getSplitEnabled();
+
         messageDelaySeconds = ExtendedMessagesConfig.getMessageDelaySeconds();
         commandDelaySeconds = ExtendedMessagesConfig.getCommandDelaySeconds();
 
         messagePrefixEnabled = ExtendedMessagesConfig.getMessagePrefixEnabled();
-        messagePrefix = ExtendedMessagesConfig.getMessagePrefix();
-
         commandPrefixEnabled = ExtendedMessagesConfig.getCommandPrefixEnabled();
-        commandPrefix = ExtendedMessagesConfig.getCommandPrefix();
+
+        messagePrefix = loadMessagePrefix();
+        commandPrefix = loadCommandPrefix();
+
+        ExtendedMessagesConfig.saveMessagePrefix(messagePrefix);
+        ExtendedMessagesConfig.saveCommandPrefix(commandPrefix);
 
         messageHistoryLength = ExtendedMessagesConfig.getMessageHistoryLength();
     }
