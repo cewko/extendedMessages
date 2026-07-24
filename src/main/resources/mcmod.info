@@ -1,11 +1,11 @@
 [
   {
     "modid": "${modid}",
-    "name": "Extended Messages",
-    "description": "extends Minecraft 1.8.9 message limit to 256 characters",
+    "name": "enhanmess",
+    "description": "adds 256-character message support, increased history length, configurable prefixes, cooldowns & message splitting",
     "version": "${version}",
     "mcversion": "${mcversion}",
-    "url": "",
+    "url": "https://github.com/cewko/enhanmess/",
     "updateUrl": "",
     "authorList": [
       "cewko"

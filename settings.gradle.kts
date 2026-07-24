@@ -23,4 +23,4 @@ plugins {
 }
 
 
-rootProject.name = "extendedMessages"
+rootProject.name = "enhanmess"
